@@ -21,6 +21,7 @@
   "login_terms": "Ao entrar o usuário aceita os termos e condições",
   "login_error_account_not_linked": "Não foi possível vincular esta conta social à sua conta existente. Tente entrar com o método que você usou antes ou use o mesmo e-mail em todos os provedores.",
   "login_error_oauth_generic": "Não foi possível concluir o login. Tente novamente ou use outro método de entrada.",
+  "login_error_oauth_config_missing": "Login indisponível no momento: configuração de autenticação incompleta no servidor.",
   "terms_title": "Termos e Condições",
   "terms_updated": "Última atualização: junho de 2026",
   "header_greeting": "Olá, {name}",
