@@ -1,0 +1,45 @@
+---
+import TablerIcon from '../ui/TablerIcon.astro';
+import type { Dictionary } from '../../i18n';
+
+interface Props {
+	activeNav: 'home' | 'add' | 'notifications';
+	dict: Dictionary;
+}
+
+const { activeNav, dict } = Astro.props;
+
+const items = [
+	{ key: 'home' as const, href: '/goals', icon: 'home' as const, label: dict.nav_home },
+	{ key: 'add' as const, href: '/goals/new', icon: 'plus' as const, label: dict.nav_add },
+];
+---
+
+<nav class="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-white/95 backdrop-blur">
+	<div class="mx-auto flex max-w-lg items-center justify-around px-4 py-3">
+		{items.map((item) => (
+			<a
+				href={item.href}
+				class:list={['nav-item', item.key === activeNav && 'is-active']}
+				data-no-transition={item.key === 'add' ? undefined : ''}
+			>
+				<span class:list={[
+					'flex h-12 w-12 items-center justify-center rounded-2xl',
+					item.key === 'add' && 'bg-brand-primary text-white shadow-glow',
+					item.key === activeNav && item.key !== 'add' && 'bg-brand-primary/10',
+				]}>
+					<TablerIcon name={item.icon} class="h-6 w-6" />
+				</span>
+				<span>{item.label}</span>
+			</a>
+		))}
+		<form method="POST" action="/api/auth/logout" class="nav-item">
+			<button type="submit" class="flex flex-col items-center gap-1">
+				<span class="flex h-12 w-12 items-center justify-center rounded-2xl">
+					<TablerIcon name="logout" class="h-6 w-6" />
+				</span>
+				<span>{dict.nav_logout}</span>
+			</button>
+		</form>
+	</div>
+</nav>

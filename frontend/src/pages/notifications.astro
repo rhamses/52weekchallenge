@@ -1,0 +1,39 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import NotificationList from '../components/notifications/NotificationList.astro';
+import { getDictionary } from '../i18n';
+import { listNotifications, listGoalsForUser, countUnreadNotifications } from '../lib/db';
+import { getWorkerEnv } from '../lib/worker-env';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/login');
+
+const env = getWorkerEnv();
+const notifications = await listNotifications(env.DB, env.CACHE, user.id);
+const goals = await listGoalsForUser(env.DB, env.CACHE, user.id);
+const unreadCount = await countUnreadNotifications(env.DB, user.id);
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale);
+---
+
+<AppLayout title={dict.notifications_title} activeNav="notifications" goalsCount={goals.length} unreadCount={unreadCount}>
+	<div class="flex items-center justify-between">
+		<h1 class="font-display text-2xl font-bold">{dict.notifications_title}</h1>
+		{notifications.length > 0 && (
+			<button
+				type="button"
+				class="text-sm text-brand-primary"
+				hx-delete="/api/notifications"
+				hx-confirm="Clear all notifications?"
+				hx-target="#notification-list"
+				hx-swap="innerHTML"
+			>
+				{dict.notifications_clear_all}
+			</button>
+		)}
+	</div>
+
+	<div class="mt-6 space-y-3" id="notification-list">
+		<NotificationList notifications={notifications} emptyLabel={dict.notifications_empty} />
+	</div>
+</AppLayout>

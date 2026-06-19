@@ -1,0 +1,37 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import GoalSummaryCard from '../../components/goals/GoalSummaryCard.astro';
+import { getDictionary } from '../../i18n';
+import { listGoalsForUser, countUnreadNotifications } from '../../lib/db';
+import { getWorkerEnv } from '../../lib/worker-env';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/login');
+
+const env = getWorkerEnv();
+const goals = await listGoalsForUser(env.DB, env.CACHE, user.id);
+const unreadCount = await countUnreadNotifications(env.DB, user.id);
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale);
+---
+
+<AppLayout title={dict.goals_list_title} activeNav="home" goalsCount={goals.length} unreadCount={unreadCount}>
+	<h1 class="font-display text-2xl font-bold">{dict.goals_list_title}</h1>
+
+	<div class="mt-6 space-y-4">
+		{goals.length === 0 ? (
+			<p class="text-[var(--text-muted)]">No goals yet. Create your first one!</p>
+		) : (
+			goals.map((goal) => (
+				<GoalSummaryCard
+					goal={goal}
+					locale={locale}
+					progressLabel={dict.goal_progress}
+					createdAtTemplate={dict.goal_created_at}
+				/>
+			))
+		)}
+	</div>
+
+	<a href="/goals/new" class="btn-primary mt-8">{dict.goals_create}</a>
+</AppLayout>

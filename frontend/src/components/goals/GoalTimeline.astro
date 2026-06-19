@@ -1,0 +1,27 @@
+---
+import TimelineItem from './TimelineItem.astro';
+import type { Goal, GoalPeriod } from '../../lib/types';
+
+interface Props {
+	goal: Goal;
+	periods: GoalPeriod[];
+	locale: string;
+	depositedLabel: string;
+	depositedAtTemplate: string;
+}
+
+const { goal, periods, locale, depositedLabel, depositedAtTemplate } = Astro.props;
+---
+
+<div class="relative mt-6 space-y-4 pl-4">
+	{periods.map((period) => (
+		<TimelineItem
+			period={period}
+			currency={goal.currency_code}
+			locale={locale}
+			depositedLabel={depositedLabel}
+			depositedAtTemplate={depositedAtTemplate}
+			goalId={goal.id}
+		/>
+	))}
+</div>

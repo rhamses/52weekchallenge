@@ -1,0 +1,32 @@
+{
+  "name": "f2w-frontend",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "db:migrate:local": "wrangler d1 migrations apply domain-monitor --local",
+    "db:migrate:remote": "wrangler d1 migrations apply domain-monitor --remote",
+    "icons:generate": "python3 scripts/generate-icons.py"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^13.7.0",
+    "@aws-sdk/client-ses": "^3.758.0",
+    "@aws-sdk/client-sns": "^3.758.0",
+    "@lottiefiles/dotlottie-web": "^0.74.0",
+    "alpinejs": "^3.15.2",
+    "astro": "^6.4.8",
+    "autoprefixer": "^10.4.22",
+    "better-auth": "^1.6.19",
+    "htmx.org": "^2.0.8",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250317.0",
+    "typescript": "^5.8.2",
+    "wrangler": "^4.0.0"
+  }
+}
