@@ -24,8 +24,9 @@ const undoUrl = depositUrl;
 
 <div
 	class:list={['timeline-item', isCompleted && 'is-completed']}
-	data-swipe-item
 	data-period-id={period.id}
+	data-amount-cents={period.amount_cents}
+	data-swipe-item
 	data-deposit-url={!isCompleted ? depositUrl : undefined}
 	data-undo-url={isCompleted ? undoUrl : undefined}
 >

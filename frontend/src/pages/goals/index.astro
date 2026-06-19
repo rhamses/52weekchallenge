@@ -18,9 +18,16 @@ const dict = getDictionary(locale);
 <AppLayout title={dict.goals_list_title} activeNav="home" goalsCount={goals.length} unreadCount={unreadCount}>
 	<h1 class="font-display text-2xl font-bold">{dict.goals_list_title}</h1>
 
-	<div class="mt-6 space-y-4">
+	<div
+		class="mt-6 space-y-4"
+		id="goals-list"
+		data-goals-list
+		data-locale={locale}
+		data-progress-template={dict.goal_progress}
+		data-created-template={dict.goal_created_at}
+	>
 		{goals.length === 0 ? (
-			<p class="text-[var(--text-muted)]">No goals yet. Create your first one!</p>
+			<p class="text-[var(--text-muted)]" data-goals-empty>No goals yet. Create your first one!</p>
 		) : (
 			goals.map((goal) => (
 				<GoalSummaryCard

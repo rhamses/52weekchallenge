@@ -29,9 +29,15 @@ if (Astro.locals.user) {
 			<p class="mt-4 max-w-sm text-sm font-light leading-relaxed text-white/85">{dict.welcome_subtitle}</p>
 		</div>
 
-		<div class="p-6 pb-10">
+		<div class="p-6 pb-10 text-center">
 			<a href="/goals/new" class="btn-primary !bg-white !text-[var(--text-primary)] hover:!bg-white/90">
 				{dict.welcome_cta}
+			</a>
+			<a
+				href="/login"
+				class="mt-3 block text-xs font-light tracking-wide text-white/70 underline underline-offset-2"
+			>
+				{dict.welcome_login_link}
 			</a>
 		</div>
 	</div>

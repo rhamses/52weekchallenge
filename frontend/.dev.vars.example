@@ -12,8 +12,14 @@ AWS_REGION=sa-east-1
 SES_FROM_EMAIL=
 SNS_PLATFORM_ARN=
 
+# Web Push (VAPID) — generate with: npx web-push generate-vapid-keys
+VAPID_PUBLIC_KEY=BHQo40sM6T0s4mZVsqHJc05pPbVy8TYFhuSTUAY2nsqFNP3uMwKaBRlaf2pqdeyHWSfrHEm4i9sieIdXu7k21Xc
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:domains@ambiente1.com.br
+
 # Production secrets (Workers):
 # wrangler secret put AUTH_SECRET
 # wrangler secret put COGNITO_CLIENT_SECRET
 # wrangler secret put AWS_ACCESS_KEY_ID
 # wrangler secret put AWS_SECRET_ACCESS_KEY
+# wrangler secret put VAPID_PRIVATE_KEY

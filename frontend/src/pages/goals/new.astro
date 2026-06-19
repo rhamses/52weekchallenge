@@ -271,15 +271,13 @@ const isLoggedIn = !!Astro.locals.user;
 					window.f2wSync?.saveDraftGoal(draft);
 
 					if (this.isLoggedIn) {
-						const res = await fetch('/api/goals', {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify(draft),
-						});
-						if (res.ok) {
-							window.f2wSync?.clearDraftGoal();
-							window.location.href = '/goals';
-						}
+						window.f2wGoals?.createGoalOptimistically(
+							draft,
+							config.locale,
+							config.dict.goal_create_error,
+							config.dict.goal_progress,
+							config.dict.goal_created_at,
+						);
 					} else {
 						window.location.href = '/login';
 					}
