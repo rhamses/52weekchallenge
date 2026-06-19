@@ -21,6 +21,7 @@
   "login_terms": "By signing in you accept the terms and conditions",
   "login_error_account_not_linked": "We couldn't link this social account to your existing account. Try signing in with the method you used before, or use the same email across providers.",
   "login_error_oauth_generic": "Sign-in could not be completed. Please try again or use another sign-in method.",
+  "login_error_oauth_config_missing": "Sign-in is temporarily unavailable: server authentication is not fully configured.",
   "terms_title": "Terms and Conditions",
   "terms_updated": "Last updated: June 2026",
   "header_greeting": "Hi, {name}",

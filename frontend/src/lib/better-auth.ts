@@ -2,6 +2,13 @@ import { betterAuth } from 'better-auth';
 import { genericOAuth } from 'better-auth/plugins';
 import { env } from 'cloudflare:workers';
 import { syncF2wUserFromBetterAuth } from './user-sync';
+import {
+	authBaseUrl,
+	authTrustedOrigins,
+	isCognitoOAuthConfigured,
+	requireAuthSecret,
+	requireCognitoOAuthConfig,
+} from './auth-config';
 
 const COGNITO_IDPS = {
 	'cognito-google': 'Google',
@@ -14,17 +21,14 @@ const COGNITO_OAUTH_PROVIDER_IDS_LIST = [
 	'cognito-facebook',
 ] as const;
 
-function authBaseUrl(): string {
-	return env.BETTER_AUTH_URL ?? env.SITE_URL ?? 'http://localhost:4321';
-}
-
 function cognitoOAuthConfig(providerId: keyof typeof COGNITO_IDPS) {
-	const domain = env.COGNITO_DOMAIN.replace(/^https?:\/\//, '');
+	const { domain, clientId, clientSecret } = requireCognitoOAuthConfig();
 	const base = `https://${domain}`;
+
 	return {
 		providerId,
-		clientId: env.COGNITO_CLIENT_ID,
-		clientSecret: env.COGNITO_CLIENT_SECRET,
+		clientId,
+		clientSecret,
 		authorizationUrl: `${base}/oauth2/authorize`,
 		tokenUrl: `${base}/oauth2/token`,
 		userInfoUrl: `${base}/oauth2/userinfo`,
@@ -49,13 +53,17 @@ function cognitoOAuthConfig(providerId: keyof typeof COGNITO_IDPS) {
 	};
 }
 
+let authInstance: ReturnType<typeof betterAuth> | null = null;
+
 export function createAuth() {
+	if (authInstance) return authInstance;
+
 	const baseURL = authBaseUrl();
 
-	return betterAuth({
-		secret: env.AUTH_SECRET,
+	authInstance = betterAuth({
+		secret: requireAuthSecret(),
 		baseURL,
-		trustedOrigins: [baseURL, 'http://localhost:4321', 'https://52weekchallenge.app'],
+		trustedOrigins: authTrustedOrigins(),
 		database: env.DB,
 		user: {
 			modelName: 'f2w_ba_user',
@@ -116,14 +124,16 @@ export function createAuth() {
 		advanced: {
 			cookiePrefix: 'f2w',
 		},
-		plugins: [
-			genericOAuth({
-				config: [
-					cognitoOAuthConfig('cognito-google'),
-					cognitoOAuthConfig('cognito-facebook'),
-				],
-			}),
-		],
+		plugins: isCognitoOAuthConfigured()
+			? [
+					genericOAuth({
+						config: [
+							cognitoOAuthConfig('cognito-google'),
+							cognitoOAuthConfig('cognito-facebook'),
+						],
+					}),
+				]
+			: [],
 		databaseHooks: {
 			session: {
 				create: {
@@ -154,6 +164,8 @@ export function createAuth() {
 			},
 		},
 	});
+
+	return authInstance;
 }
 
 export const COGNITO_OAUTH_PROVIDER_IDS = {
@@ -162,3 +174,5 @@ export const COGNITO_OAUTH_PROVIDER_IDS = {
 } as const;
 
 export type CognitoLoginProvider = keyof typeof COGNITO_OAUTH_PROVIDER_IDS;
+
+export { isCognitoOAuthConfigured } from './auth-config';

@@ -1,5 +1,10 @@
 import type { APIRoute } from 'astro';
-import { createAuth, COGNITO_OAUTH_PROVIDER_IDS, type CognitoLoginProvider } from '@/lib/better-auth';
+import {
+	createAuth,
+	COGNITO_OAUTH_PROVIDER_IDS,
+	isCognitoOAuthConfigured,
+	type CognitoLoginProvider,
+} from '@/lib/better-auth';
 
 const IDP_KEYS: Record<string, CognitoLoginProvider> = {
 	google: 'google',
@@ -7,6 +12,11 @@ const IDP_KEYS: Record<string, CognitoLoginProvider> = {
 };
 
 export const GET: APIRoute = async ({ params, request }) => {
+	if (!isCognitoOAuthConfigured()) {
+		console.error('[auth] OAuth login unavailable: missing Cognito environment variables');
+		return Response.redirect('/login?error=oauth_config_missing', 302);
+	}
+
 	const key = params.provider ?? '';
 	const providerKey = IDP_KEYS[key];
 

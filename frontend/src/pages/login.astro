@@ -13,9 +13,11 @@ const oauthError = Astro.url.searchParams.get('error');
 const loginErrorMessage =
 	oauthError === 'account_not_linked'
 		? dict.login_error_account_not_linked
-		: oauthError
-			? dict.login_error_oauth_generic
-			: null;
+		: oauthError === 'oauth_config_missing'
+			? dict.login_error_oauth_config_missing
+			: oauthError
+				? dict.login_error_oauth_generic
+				: null;
 ---
 
 <BaseLayout title={dict.login_title}>
