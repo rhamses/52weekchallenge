@@ -5,6 +5,9 @@ export interface Env {
 	AWS_SECRET_ACCESS_KEY: string;
 	SES_FROM_EMAIL: string;
 	SNS_PLATFORM_ARN: string;
+	VAPID_PUBLIC_KEY: string;
+	VAPID_PRIVATE_KEY: string;
+	VAPID_SUBJECT: string;
 }
 
 interface OverdueRow {
@@ -20,6 +23,7 @@ interface OverdueRow {
 
 import reminderEmailTemplate from './templates/reminder-email';
 import pushTemplate from './templates/reminder-push';
+import { sendWebPush, type PushSubscriptionJSON } from './web-push';
 
 function renderTemplate(template: string, vars: Record<string, string>): string {
 	let out = template;
@@ -122,15 +126,41 @@ async function sendPush(
 	userId: string,
 	payload: { title: string; body: string; goalId: string },
 ): Promise<void> {
-	if (!env.AWS_ACCESS_KEY_ID || !env.SNS_PLATFORM_ARN) return;
-
 	const { results } = await env.DB.prepare(
-		`SELECT sns_endpoint_arn FROM f2w_user_devices WHERE user_id = ?`,
+		`SELECT platform, sns_endpoint_arn, push_subscription FROM f2w_user_devices WHERE user_id = ?`,
 	)
 		.bind(userId)
-		.all<{ sns_endpoint_arn: string }>();
+		.all<{
+			platform: string;
+			sns_endpoint_arn: string;
+			push_subscription: string | null;
+		}>();
 
 	if (!results?.length) return;
+
+	for (const device of results) {
+		if (device.platform === 'web' && device.push_subscription) {
+			try {
+				const subscription = JSON.parse(device.push_subscription) as PushSubscriptionJSON;
+				await sendWebPush(env, subscription, payload);
+			} catch (err) {
+				console.error('Web push failed', err);
+			}
+			continue;
+		}
+
+		if (device.platform !== 'web' && device.sns_endpoint_arn && env.SNS_PLATFORM_ARN) {
+			await sendViaSns(env, device.sns_endpoint_arn, payload);
+		}
+	}
+}
+
+async function sendViaSns(
+	env: Env,
+	endpointArn: string,
+	payload: { title: string; body: string; goalId: string },
+): Promise<void> {
+	if (!env.AWS_ACCESS_KEY_ID) return;
 
 	const { SNSClient, PublishCommand } = await import('@aws-sdk/client-sns');
 	const client = new SNSClient({
@@ -147,13 +177,11 @@ async function sendPush(
 		goalId: payload.goalId,
 	});
 
-	for (const device of results) {
-		await client.send(
-			new PublishCommand({
-				TargetArn: device.sns_endpoint_arn,
-				Message: message,
-				MessageStructure: 'json',
-			}),
-		);
-	}
+	await client.send(
+		new PublishCommand({
+			TargetArn: endpointArn,
+			Message: message,
+			MessageStructure: 'json',
+		}),
+	);
 }

@@ -29,18 +29,31 @@ const dict = getDictionary(locale);
 
 const depositLabels = JSON.stringify({
 	defaultMsg: dict.deposit_error_default,
+	deleteError: dict.goal_delete_error,
 });
 ---
 
 <AppLayout title={goal.title} activeNav="home" goalsCount={goals.length} unreadCount={unreadCount}>
 	<p class="text-sm font-medium text-[var(--text-muted)]">{dict.goal_details_title}</p>
 
-	<div id="goal-summary">
-		<GoalDetailSummary
-			goal={goal}
-			locale={locale}
-			progressLabel={dict.goal_progress}
-		/>
+	<div id="goal-summary-mount">
+		<div id="goal-summary-placeholder" class="h-0" aria-hidden="true"></div>
+		<div
+			id="goal-summary"
+			data-goal-id={goal.id}
+			data-saved-cents={goal.saved_amount_cents}
+			data-target-cents={goal.target_amount_cents}
+			data-currency={goal.currency_code}
+			data-locale={locale}
+			data-progress-template={dict.goal_progress}
+			data-completed-at-template={dict.history_deposited_at}
+		>
+			<GoalDetailSummary
+				goal={goal}
+				locale={locale}
+				progressLabel={dict.goal_progress}
+			/>
+		</div>
 	</div>
 
 	<h3 class="mt-10 font-display text-lg font-semibold">{dict.history_title}</h3>
@@ -58,7 +71,7 @@ const depositLabels = JSON.stringify({
 
 	<div
 		class="mt-10 pb-4 text-center"
-		x-data={`goalDelete(${JSON.stringify({ goalId: goal.id, deleteUrl: `/api/goals/${goal.id}` })})`}
+		x-data={`goalDelete(${JSON.stringify({ goalId: goal.id, deleteUrl: `/api/goals/${goal.id}`, deleteError: dict.goal_delete_error })})`}
 	>
 		<button
 			type="button"
@@ -71,6 +84,7 @@ const depositLabels = JSON.stringify({
 		<div
 			x-show="showDeleteModal"
 			x-cloak
+			style="display: none"
 			class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
 			@click.self="showDeleteModal = false"
 		>
@@ -98,52 +112,18 @@ const depositLabels = JSON.stringify({
 		</div>
 	</div>
 
-	<div
-		x-data={`depositError(${JSON.stringify({ title: dict.deposit_error_title, ok: dict.deposit_error_ok })})`}
-		@deposit-error.window="open($event.detail.message)"
-	>
-		<div
-			x-show="visible"
-			x-cloak
-			class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-			@click.self="close()"
-		>
-			<div class="card w-full max-w-sm p-6 text-left" role="alertdialog" aria-modal="true">
-				<h3 class="font-display text-xl font-bold" x-text="title"></h3>
-				<p class="mt-3 text-sm text-[var(--text-muted)]" x-text="message"></p>
-				<button type="button" class="btn-primary mt-6 w-full" @click="close()" x-text="okLabel"></button>
-			</div>
-		</div>
-	</div>
-
 	<script is:inline>
 		document.addEventListener('alpine:init', () => {
-			Alpine.data('depositError', (config) => ({
-				visible: false,
-				message: '',
-				title: config.title,
-				okLabel: config.ok,
-				open(msg) {
-					this.message = msg;
-					this.visible = true;
-				},
-				close() {
-					this.visible = false;
-				},
-			}));
-
 			Alpine.data('goalDelete', (config) => ({
 				showDeleteModal: false,
 				deleting: false,
 				confirmDelete() {
 					this.deleting = true;
-					const root = this.$el;
-					const onError = () => {
-						this.deleting = false;
-					};
-					root.addEventListener('htmx:responseError', onError, { once: true });
-					root.addEventListener('htmx:sendError', onError, { once: true });
-					window.htmx.ajax('DELETE', config.deleteUrl, { swap: 'none', source: root });
+					window.f2wGoals?.deleteGoalOptimistically(
+						config.goalId,
+						config.deleteUrl,
+						config.deleteError,
+					);
 				},
 			}));
 		});

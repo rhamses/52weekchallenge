@@ -23,3 +23,7 @@ database_id = "8b21eb9b-08fb-47e5-889c-cd2a68181e0b"
 
 [vars]
 AWS_REGION = "us-east-1"
+VAPID_PUBLIC_KEY = "BHQo40sM6T0s4mZVsqHJc05pPbVy8TYFhuSTUAY2nsqFNP3uMwKaBRlaf2pqdeyHWSfrHEm4i9sieIdXu7k21Xc"
+VAPID_SUBJECT = "mailto:domains@ambiente1.com.br"
+
+# Secrets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, SES_FROM_EMAIL, SNS_PLATFORM_ARN, VAPID_PRIVATE_KEY

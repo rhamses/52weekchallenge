@@ -78,7 +78,7 @@
 		@apply text-brand-primary;
 	}
 
-	.x-cloak {
+	[x-cloak] {
 		display: none !important;
 	}
 
@@ -89,6 +89,43 @@
 	[data-swipe-item],
 	[data-notification-item] {
 		touch-action: pan-y;
+	}
+
+	#goal-summary.is-compact {
+		position: fixed;
+		top: 0;
+		z-index: 40;
+		margin-top: 0;
+		padding-top: env(safe-area-inset-top, 0px);
+	}
+
+	#goal-summary.is-compact .goal-card {
+		@apply rounded-b-2xl rounded-t-none p-3 shadow-card;
+		margin-top: 0;
+	}
+
+	#goal-summary.is-compact [data-goal-title] {
+		display: none;
+	}
+
+	#goal-summary.is-compact .goal-card > div {
+		margin-top: 0;
+	}
+
+	#goal-summary.is-compact [data-goal-target] {
+		@apply text-xs;
+	}
+
+	#goal-summary.is-compact [data-goal-saved] {
+		@apply text-xl;
+	}
+
+	#goal-summary.is-compact [data-goal-progress-text] {
+		@apply text-xs font-medium;
+	}
+
+	#goal-summary.is-compact [data-goal-progress-bar] {
+		@apply h-1.5 w-20;
 	}
 }
 

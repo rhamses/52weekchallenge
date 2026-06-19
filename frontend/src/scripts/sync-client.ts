@@ -113,6 +113,18 @@ function queueOperation(op: PendingOp): void {
 	const pending = getCache<PendingOp[]>(PENDING_KEY) ?? [];
 	pending.push(op);
 	setCache(PENDING_KEY, pending);
+	void registerBackgroundSync();
+}
+
+async function registerBackgroundSync(): Promise<void> {
+	if (!('serviceWorker' in navigator)) return;
+	try {
+		const reg = await navigator.serviceWorker.ready;
+		// @ts-expect-error Background Sync API
+		if ('sync' in reg) await reg.sync.register('f2w-sync');
+	} catch {
+		/* unsupported */
+	}
 }
 
 async function flushPendingOperations(): Promise<void> {

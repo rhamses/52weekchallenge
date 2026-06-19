@@ -13,7 +13,7 @@ interface Props {
 const { goal, periods, locale, depositedLabel, depositedAtTemplate } = Astro.props;
 ---
 
-<div class="relative mt-6 space-y-4 pl-4">
+<div class="relative mt-6 space-y-4">
 	{periods.map((period) => (
 		<TimelineItem
 			period={period}
