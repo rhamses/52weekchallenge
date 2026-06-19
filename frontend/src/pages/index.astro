@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LottiePlayer from '../components/ui/LottiePlayer.astro';
+import { getDictionary } from '../i18n';
+
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale);
+
+if (Astro.locals.user) {
+	return Astro.redirect('/goals');
+}
+---
+
+<BaseLayout title={dict.app_name} showLang={false} bodyClass="bg-[var(--welcome-bg)]">
+	<div class="flex min-h-dvh flex-col items-center justify-center px-6" id="splash">
+		<LottiePlayer
+			src="/assets/wallet.lottie"
+			width={280}
+			height={240}
+			class="mb-8 max-w-[70vw] h-auto w-full max-h-[240px]"
+		/>
+		<p class="font-display text-lg text-white/90">{dict.splash_loading}</p>
+	</div>
+	<script define:vars={{ welcomePath: '/welcome' }}>
+		setTimeout(() => {
+			document.documentElement.dataset.transition = 'forward';
+			window.location.href = welcomePath;
+		}, 1800);
+	</script>
+</BaseLayout>

@@ -1,0 +1,151 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import GoalDetailSummary from '../../components/goals/GoalDetailSummary.astro';
+import GoalTimeline from '../../components/goals/GoalTimeline.astro';
+import { getDictionary } from '../../i18n';
+import {
+	getGoalById,
+	getGoalPeriods,
+	listGoalsForUser,
+	countUnreadNotifications,
+} from '../../lib/db';
+import { getWorkerEnv } from '../../lib/worker-env';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/login');
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect('/goals');
+
+const env = getWorkerEnv();
+const goal = await getGoalById(env.DB, env.CACHE, id, user.id);
+if (!goal) return Astro.redirect('/goals');
+
+const periods = await getGoalPeriods(env.DB, id);
+const goals = await listGoalsForUser(env.DB, env.CACHE, user.id);
+const unreadCount = await countUnreadNotifications(env.DB, user.id);
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale);
+
+const depositLabels = JSON.stringify({
+	defaultMsg: dict.deposit_error_default,
+});
+---
+
+<AppLayout title={goal.title} activeNav="home" goalsCount={goals.length} unreadCount={unreadCount}>
+	<p class="text-sm font-medium text-[var(--text-muted)]">{dict.goal_details_title}</p>
+
+	<div id="goal-summary">
+		<GoalDetailSummary
+			goal={goal}
+			locale={locale}
+			progressLabel={dict.goal_progress}
+		/>
+	</div>
+
+	<h3 class="mt-10 font-display text-lg font-semibold">{dict.history_title}</h3>
+	<p class="text-xs text-[var(--text-muted)]">{dict.history_swipe_hint}</p>
+
+	<div id="goal-timeline" data-deposit-labels={depositLabels}>
+		<GoalTimeline
+			goal={goal}
+			periods={periods}
+			locale={locale}
+			depositedLabel={dict.history_deposited}
+			depositedAtTemplate={dict.history_deposited_at}
+		/>
+	</div>
+
+	<div
+		class="mt-10 pb-4 text-center"
+		x-data={`goalDelete(${JSON.stringify({ goalId: goal.id, deleteUrl: `/api/goals/${goal.id}` })})`}
+	>
+		<button
+			type="button"
+			class="text-sm font-medium text-red-600 underline hover:text-red-700"
+			@click="showDeleteModal = true"
+		>
+			{dict.goal_delete_link}
+		</button>
+
+		<div
+			x-show="showDeleteModal"
+			x-cloak
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+			@click.self="showDeleteModal = false"
+		>
+			<div class="card w-full max-w-sm p-6 text-left" role="dialog" aria-modal="true">
+				<h3 class="font-display text-xl font-bold">{dict.goal_delete_confirm_title}</h3>
+				<div class="mt-6 flex gap-3">
+					<button
+						type="button"
+						class="btn-secondary flex-1"
+						:disabled="deleting"
+						@click="showDeleteModal = false"
+					>
+						{dict.goal_delete_confirm_no}
+					</button>
+					<button
+						type="button"
+						class="btn-primary flex-1 !bg-red-600 !py-3 hover:!bg-red-700"
+						:disabled="deleting"
+						@click="confirmDelete()"
+					>
+						{dict.goal_delete_confirm_yes}
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div
+		x-data={`depositError(${JSON.stringify({ title: dict.deposit_error_title, ok: dict.deposit_error_ok })})`}
+		@deposit-error.window="open($event.detail.message)"
+	>
+		<div
+			x-show="visible"
+			x-cloak
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+			@click.self="close()"
+		>
+			<div class="card w-full max-w-sm p-6 text-left" role="alertdialog" aria-modal="true">
+				<h3 class="font-display text-xl font-bold" x-text="title"></h3>
+				<p class="mt-3 text-sm text-[var(--text-muted)]" x-text="message"></p>
+				<button type="button" class="btn-primary mt-6 w-full" @click="close()" x-text="okLabel"></button>
+			</div>
+		</div>
+	</div>
+
+	<script is:inline>
+		document.addEventListener('alpine:init', () => {
+			Alpine.data('depositError', (config) => ({
+				visible: false,
+				message: '',
+				title: config.title,
+				okLabel: config.ok,
+				open(msg) {
+					this.message = msg;
+					this.visible = true;
+				},
+				close() {
+					this.visible = false;
+				},
+			}));
+
+			Alpine.data('goalDelete', (config) => ({
+				showDeleteModal: false,
+				deleting: false,
+				confirmDelete() {
+					this.deleting = true;
+					const root = this.$el;
+					const onError = () => {
+						this.deleting = false;
+					};
+					root.addEventListener('htmx:responseError', onError, { once: true });
+					root.addEventListener('htmx:sendError', onError, { once: true });
+					window.htmx.ajax('DELETE', config.deleteUrl, { swap: 'none', source: root });
+				},
+			}));
+		});
+	</script>
+</AppLayout>

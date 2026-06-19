@@ -1,0 +1,49 @@
+---
+import { formatMoney, formatGoalCreatedAtLabel } from '../../lib/calculations';
+import type { GoalPeriod } from '../../lib/types';
+
+interface Props {
+	period: GoalPeriod;
+	currency: string;
+	locale: string;
+	depositedLabel: string;
+	depositedAtTemplate: string;
+	goalId: string;
+}
+
+const { period, currency, locale, depositedLabel, depositedAtTemplate, goalId } = Astro.props;
+const isCompleted = period.status === 'completed';
+const formatted = formatMoney(period.amount_cents, currency, locale);
+const completedDate =
+	isCompleted && period.completed_at
+		? formatGoalCreatedAtLabel(period.completed_at, locale, depositedAtTemplate)
+		: null;
+const depositUrl = `/api/goals/${goalId}/periods/${period.id}/deposit`;
+const undoUrl = depositUrl;
+---
+
+<div
+	class:list={['timeline-item', isCompleted && 'is-completed']}
+	data-swipe-item
+	data-period-id={period.id}
+	data-deposit-url={!isCompleted ? depositUrl : undefined}
+	data-undo-url={isCompleted ? undoUrl : undefined}
+>
+	<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-primary/10 font-display font-bold text-brand-primary">
+		{period.period_index}
+	</div>
+	<div class="min-w-0 flex-1">
+		<p class="font-semibold">{depositedLabel}</p>
+		{period.note && <p class="text-sm text-[var(--text-muted)]">{period.note}</p>}
+	</div>
+	<p class="text-right font-semibold">
+		{formatted}
+		<span
+			class="mt-0.5 block text-xs font-light text-[var(--text-muted)]"
+			data-completed-date
+			hidden={!completedDate}
+		>
+			{completedDate}
+		</span>
+	</p>
+</div>
