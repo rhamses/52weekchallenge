@@ -220,13 +220,51 @@ export async function clearAllNotifications(
 export async function registerDevice(
 	env: Pick<Env, 'DB'>,
 	userId: string,
-	snsEndpointArn: string,
-	platform: 'web' | 'ios' | 'android',
+	data: {
+		platform: 'web' | 'ios' | 'android';
+		push_subscription?: string;
+		sns_endpoint_arn?: string;
+	},
 ): Promise<void> {
+	if (data.platform === 'web' && data.push_subscription) {
+		const existing = await env.DB.prepare(
+			`SELECT id FROM f2w_user_devices WHERE user_id = ? AND push_subscription = ?`,
+		)
+			.bind(userId, data.push_subscription)
+			.first();
+
+		if (existing) return;
+
+		let endpoint = '';
+		try {
+			endpoint = JSON.parse(data.push_subscription).endpoint ?? '';
+		} catch {
+			return;
+		}
+
+		if (endpoint) {
+			await env.DB.prepare(
+				`DELETE FROM f2w_user_devices WHERE user_id = ? AND platform = 'web' AND sns_endpoint_arn = ?`,
+			)
+				.bind(userId, endpoint)
+				.run();
+		}
+
+		const id = generateId();
+		await env.DB.prepare(
+			`INSERT INTO f2w_user_devices (id, user_id, sns_endpoint_arn, push_subscription, platform) VALUES (?, ?, ?, ?, 'web')`,
+		)
+			.bind(id, userId, endpoint, data.push_subscription)
+			.run();
+		return;
+	}
+
+	if (!data.sns_endpoint_arn) return;
+
 	const id = generateId();
 	await env.DB.prepare(
 		`INSERT INTO f2w_user_devices (id, user_id, sns_endpoint_arn, platform) VALUES (?, ?, ?, ?)`,
 	)
-		.bind(id, userId, snsEndpointArn, platform)
+		.bind(id, userId, data.sns_endpoint_arn, data.platform)
 		.run();
 }

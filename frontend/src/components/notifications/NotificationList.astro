@@ -17,6 +17,7 @@ const { notifications, emptyLabel } = Astro.props;
 			href={n.goal_id ? `/goals/${n.goal_id}` : '#'}
 			class="card block p-4 transition hover:shadow-glow"
 			data-notification-item
+			data-notification-id={n.id}
 			data-delete-url={`/api/notifications/${n.id}`}
 		>
 			<p class="font-semibold">{n.title}</p>

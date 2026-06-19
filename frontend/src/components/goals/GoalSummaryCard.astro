@@ -16,7 +16,7 @@ const formattedSaved = formatMoney(goal.saved_amount_cents, goal.currency_code, 
 const createdLabel = formatGoalCreatedAtLabel(goal.created_at, locale, createdAtTemplate);
 ---
 
-<a href={`/goals/${goal.id}`} class="goal-card block">
+<a href={`/goals/${goal.id}`} class="goal-card block" data-goal-card={goal.id}>
 	<h3 class="font-display text-xl font-semibold">{goal.title}</h3>
 	<p class="mt-1 text-xs font-light text-[var(--text-muted)]">{createdLabel}</p>
 	<div class="mt-3 flex items-end justify-between">

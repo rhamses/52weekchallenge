@@ -21,7 +21,8 @@ A PWA for weekly savings goals, built with **Astro 6** on Cloudflare Workers, wi
 | Client cache | localStorage + Service Worker |
 | Auth | Better Auth + AWS Cognito (Google/Facebook/Apple via `identity_provider`) |
 | Email | AWS SES |
-| Push | AWS SNS |
+| Push (web) | Web Push + VAPID (`web-push`) |
+| Push (mobile, future) | AWS SNS |
 
 ## Data flow
 
@@ -68,7 +69,25 @@ See `frontend/.dev.vars.example` and `monitoring/.dev.vars.example`.
 | `AUTH_SECRET` | Better Auth session signing |
 | `AWS_*` | SES email + SNS push |
 | `SES_FROM_EMAIL` | Sender address |
-| `SNS_PLATFORM_ARN` | Push platform application |
+| `SNS_PLATFORM_ARN` | SNS platform app (iOS/Android, future) |
+| `VAPID_PUBLIC_KEY` | Web Push public key (also in `wrangler.toml` [vars]) |
+| `VAPID_PRIVATE_KEY` | Web Push private key (secret) |
+| `VAPID_SUBJECT` | VAPID contact (`mailto:…`) |
+
+### PWA setup
+
+1. Generate VAPID keys: `npx web-push generate-vapid-keys`
+2. Set `VAPID_PUBLIC_KEY` in `frontend/wrangler.toml` and `monitoring/wrangler.toml` `[vars]`
+3. Set `VAPID_PRIVATE_KEY` via `wrangler secret put VAPID_PRIVATE_KEY` on **both** workers
+4. Apply migration `0004_user_devices_web_push.sql`
+5. Verify in Chrome DevTools → Application → Manifest / Service Workers
+6. Lighthouse PWA audit: installable, SW registered
+
+**Features:** `public/sw.js` (offline shell, push, background sync), `site.webmanifest` (standalone + splash via `background_color`), install prompt, push permission banner after login.
+
+**Push flow:** browser subscribes with VAPID → `POST /api/devices/register` → D1 `f2w_user_devices.push_subscription` → monitoring cron sends via `web-push`.
+
+SNS (`SNS_PLATFORM_ARN`) remains for future native iOS/Android apps.
 
 ### Cognito App Client URLs
 

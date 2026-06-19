@@ -15,10 +15,20 @@ const { title, activeNav = 'home', goalsCount = 0, unreadCount = 0 } = Astro.pro
 const user = Astro.locals.user!;
 const locale = Astro.locals.locale;
 const dict = getDictionary(locale);
+
+const pushLabels = JSON.stringify({
+	title: dict.push_enable_title,
+	body: dict.push_enable_body,
+	allow: dict.push_enable_allow,
+	dismiss: dict.push_enable_dismiss,
+});
 ---
 
 <BaseLayout title={title ?? dict.app_name} showLang={false}>
-	<div class="mx-auto flex min-h-dvh max-w-lg flex-col px-4 pb-24 pt-4">
+	<div
+		class="mx-auto flex min-h-dvh max-w-lg flex-col px-4 pb-24 pt-4"
+		data-push-labels={pushLabels}
+	>
 		<AppHeader
 			userName={user.name ?? user.email}
 			goalsCount={goalsCount}
@@ -32,18 +42,10 @@ const dict = getDictionary(locale);
 		</main>
 		<AppFooter activeNav={activeNav} dict={dict} />
 	</div>
-	<script is:inline>
-		if ('serviceWorker' in navigator && 'PushManager' in window) {
-			navigator.serviceWorker.ready.then(async (reg) => {
-				try {
-					const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: new Uint8Array(0) });
-					await fetch('/api/devices/register', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ sns_endpoint_arn: JSON.stringify(sub.toJSON()), platform: 'web' }),
-					});
-				} catch { /* push optional until SNS configured */ }
-			});
-		}
-	</script>
+
+	<div
+		id="push-banner"
+		class="fixed bottom-24 left-4 right-4 z-40 mx-auto hidden max-w-lg rounded-2xl border border-[var(--border)] bg-white p-4 shadow-card"
+		aria-live="polite"
+	></div>
 </BaseLayout>

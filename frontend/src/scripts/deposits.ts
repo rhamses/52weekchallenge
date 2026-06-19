@@ -1,8 +1,48 @@
 import { playConfettiCelebration } from './lottie';
+import {
+	saveSnapshot,
+	runOptimisticMutation,
+} from './optimistic-client';
+import {
+	formatMoneyCents,
+	formatProgressLabel,
+	formatGoalCreatedAtLabel,
+	progressPercent,
+} from './client-format';
+import { getCache, setCache } from './sync-client';
 import type { DepositResponsePayload } from '@/lib/deposit-response';
 
 type GoalSummary = DepositResponsePayload['goal'];
 type PeriodSummary = DepositResponsePayload['period'];
+
+interface SummaryMeta {
+	goalId: string;
+	savedCents: number;
+	targetCents: number;
+	currency: string;
+	locale: string;
+	progressTemplate: string;
+	completedAtTemplate: string;
+}
+
+interface PeriodSnapshot {
+	id: string;
+	isCompleted: boolean;
+	depositUrl?: string;
+	undoUrl?: string;
+	dateText: string;
+	dateHidden: boolean;
+}
+
+interface GoalDetailSnapshot {
+	summary: SummaryMeta;
+	periods: PeriodSnapshot[];
+}
+
+interface GoalOptimisticCache {
+	saved_amount_cents: number;
+	periods: Record<string, { status: string; completed_at_label?: string }>;
+}
 
 function resetSwipeTransform(item: HTMLElement): void {
 	item.style.transition = 'transform 0.25s ease';
@@ -15,6 +55,31 @@ export function revertSwipeItem(item: HTMLElement): void {
 
 function getCompletedDateEl(item: HTMLElement): HTMLElement | null {
 	return item.querySelector('[data-completed-date]');
+}
+
+function getSummaryEl(): HTMLElement | null {
+	return document.getElementById('goal-summary');
+}
+
+function readSummaryMeta(): SummaryMeta | null {
+	const el = getSummaryEl();
+	if (!el?.dataset.goalId) return null;
+	return {
+		goalId: el.dataset.goalId,
+		savedCents: Number(el.dataset.savedCents ?? 0),
+		targetCents: Number(el.dataset.targetCents ?? 0),
+		currency: el.dataset.currency ?? 'BRL',
+		locale: el.dataset.locale ?? 'pt-BR',
+		progressTemplate: el.dataset.progressTemplate ?? '{percent}%',
+		completedAtTemplate: el.dataset.completedAtTemplate ?? '{day} de {month} de {year}',
+	};
+}
+
+function writeSummaryMeta(meta: SummaryMeta): void {
+	const el = getSummaryEl();
+	if (!el) return;
+	el.dataset.savedCents = String(meta.savedCents);
+	el.dataset.targetCents = String(meta.targetCents);
 }
 
 export function applyCompletedState(item: HTMLElement, period: PeriodSummary, depositUrl: string): void {
@@ -44,28 +109,144 @@ export function applyPendingState(item: HTMLElement, depositUrl: string): void {
 }
 
 export function updateGoalSummary(goal: GoalSummary): void {
-	const summary = document.getElementById('goal-summary');
-	if (!summary) return;
+	const summary = getSummaryEl();
+	const meta = readSummaryMeta();
+	if (!summary || !meta) return;
 
 	summary.querySelector<HTMLElement>('[data-goal-target]')!.textContent = goal.target_amount_label;
 	summary.querySelector<HTMLElement>('[data-goal-saved]')!.textContent = goal.saved_amount_label;
 	summary.querySelector<HTMLElement>('[data-goal-progress-text]')!.textContent = goal.progress_label;
 	const bar = summary.querySelector<HTMLElement>('[data-goal-progress-bar]');
 	if (bar) bar.style.width = `${goal.progress_percent}%`;
+
+	writeSummaryMeta({
+		...meta,
+		savedCents: goal.saved_amount_cents,
+		targetCents: goal.target_amount_cents,
+	});
 }
 
-export function showDepositError(message: string): void {
-	document.dispatchEvent(
-		new CustomEvent('deposit-error', { detail: { message } }),
+function updateSummaryOptimistic(savedCents: number, meta: SummaryMeta): void {
+	const summary = getSummaryEl();
+	if (!summary) return;
+
+	const percent = progressPercent(savedCents, meta.targetCents);
+	summary.querySelector<HTMLElement>('[data-goal-saved]')!.textContent = formatMoneyCents(
+		savedCents,
+		meta.currency,
+		meta.locale,
 	);
+	summary.querySelector<HTMLElement>('[data-goal-progress-text]')!.textContent = formatProgressLabel(
+		savedCents,
+		meta.targetCents,
+		meta.progressTemplate,
+	);
+	const bar = summary.querySelector<HTMLElement>('[data-goal-progress-bar]');
+	if (bar) bar.style.width = `${percent}%`;
+
+	writeSummaryMeta({ ...meta, savedCents });
 }
 
-async function parseErrorMessage(res: Response, fallback: string): Promise<string> {
-	try {
-		const data = (await res.json()) as { error?: string };
-		return data.error ?? fallback;
-	} catch {
-		return fallback;
+function goalCacheKey(goalId: string): string {
+	return `goal:${goalId}`;
+}
+
+function persistGoalCache(goalId: string, meta: SummaryMeta): void {
+	const periods: GoalOptimisticCache['periods'] = {};
+	document.querySelectorAll<HTMLElement>('[data-swipe-item]').forEach((item) => {
+		const periodId = item.dataset.periodId;
+		if (!periodId) return;
+		const dateEl = getCompletedDateEl(item);
+		if (item.classList.contains('is-completed')) {
+			periods[periodId] = {
+				status: 'completed',
+				completed_at_label: dateEl?.textContent ?? undefined,
+			};
+		}
+	});
+
+	setCache(goalCacheKey(goalId), {
+		saved_amount_cents: meta.savedCents,
+		periods,
+	} satisfies GoalOptimisticCache);
+}
+
+export function captureGoalDetailState(): GoalDetailSnapshot | null {
+	const meta = readSummaryMeta();
+	if (!meta) return null;
+
+	const periods: PeriodSnapshot[] = [];
+	document.querySelectorAll<HTMLElement>('[data-swipe-item]').forEach((item) => {
+		const id = item.dataset.periodId;
+		if (!id) return;
+		const dateEl = getCompletedDateEl(item);
+		periods.push({
+			id,
+			isCompleted: item.classList.contains('is-completed'),
+			depositUrl: item.dataset.depositUrl,
+			undoUrl: item.dataset.undoUrl,
+			dateText: dateEl?.textContent ?? '',
+			dateHidden: dateEl?.hidden ?? true,
+		});
+	});
+
+	return { summary: { ...meta }, periods };
+}
+
+export function restoreGoalDetailState(snapshot: GoalDetailSnapshot): void {
+	writeSummaryMeta(snapshot.summary);
+	updateSummaryOptimistic(snapshot.summary.savedCents, snapshot.summary);
+
+	for (const p of snapshot.periods) {
+		const item = document.querySelector<HTMLElement>(`[data-period-id="${p.id}"]`);
+		if (!item) continue;
+
+		if (p.isCompleted) {
+			item.classList.add('is-completed');
+			delete item.dataset.depositUrl;
+			if (p.undoUrl) item.dataset.undoUrl = p.undoUrl;
+		} else {
+			item.classList.remove('is-completed');
+			delete item.dataset.undoUrl;
+			if (p.depositUrl) item.dataset.depositUrl = p.depositUrl;
+		}
+
+		const dateEl = getCompletedDateEl(item);
+		if (dateEl) {
+			dateEl.textContent = p.dateText;
+			dateEl.hidden = p.dateHidden;
+		}
+	}
+
+	persistGoalCache(snapshot.summary.goalId, snapshot.summary);
+}
+
+export function hydrateGoalDetailFromCache(): void {
+	const meta = readSummaryMeta();
+	if (!meta) return;
+
+	const cache = getCache<GoalOptimisticCache>(goalCacheKey(meta.goalId));
+	if (!cache) return;
+
+	updateSummaryOptimistic(cache.saved_amount_cents, meta);
+
+	for (const [periodId, period] of Object.entries(cache.periods)) {
+		const item = document.querySelector<HTMLElement>(`[data-period-id="${periodId}"]`);
+		if (!item) continue;
+
+		if (period.status === 'completed') {
+			const depositUrl = item.dataset.depositUrl ?? item.dataset.undoUrl ?? '';
+			applyCompletedState(
+				item,
+				{
+					id: periodId,
+					status: 'completed',
+					completed_at: null,
+					completed_at_label: period.completed_at_label ?? null,
+				},
+				depositUrl,
+			);
+		}
 	}
 }
 
@@ -81,45 +262,80 @@ function getDefaultErrorMessage(): string {
 	}
 }
 
-export async function confirmDeposit(item: HTMLElement, url: string): Promise<void> {
-	const fallback = getDefaultErrorMessage();
-
-	try {
-		const res = await fetch(url, { method: 'POST', credentials: 'same-origin' });
-
-		if (!res.ok) {
-			revertSwipeItem(item);
-			showDepositError(await parseErrorMessage(res, fallback));
-			return;
-		}
-
-		const data = (await res.json()) as DepositResponsePayload;
-		applyCompletedState(item, data.period, url);
-		updateGoalSummary(data.goal);
-		playConfettiCelebration();
-	} catch {
-		revertSwipeItem(item);
-		showDepositError(fallback);
-	}
+function buildOptimisticPeriod(item: HTMLElement, meta: SummaryMeta, completed: boolean): PeriodSummary {
+	const now = new Date().toISOString();
+	const label = completed
+		? formatGoalCreatedAtLabel(now, meta.locale, meta.completedAtTemplate)
+		: null;
+	return {
+		id: item.dataset.periodId ?? '',
+		status: completed ? 'completed' : 'pending',
+		completed_at: completed ? now : null,
+		completed_at_label: label,
+	};
 }
 
-export async function undoDeposit(item: HTMLElement, url: string): Promise<void> {
-	const fallback = getDefaultErrorMessage();
+export function confirmDeposit(item: HTMLElement, url: string): void {
+	const meta = readSummaryMeta();
+	if (!meta) return;
 
-	try {
-		const res = await fetch(url, { method: 'DELETE', credentials: 'same-origin' });
+	const amountCents = Number(item.dataset.amountCents ?? 0);
+	const snapshot = captureGoalDetailState();
+	if (!snapshot) return;
 
-		if (!res.ok) {
-			revertSwipeItem(item);
-			showDepositError(await parseErrorMessage(res, fallback));
-			return;
-		}
+	const storageKey = goalCacheKey(meta.goalId);
+	saveSnapshot(storageKey, snapshot);
 
-		const data = (await res.json()) as DepositResponsePayload;
-		applyPendingState(item, url);
-		updateGoalSummary(data.goal);
-	} catch {
-		revertSwipeItem(item);
-		showDepositError(fallback);
-	}
+	const period = buildOptimisticPeriod(item, meta, true);
+	applyCompletedState(item, period, url);
+	const newSaved = meta.savedCents + amountCents;
+	const updatedMeta = { ...meta, savedCents: newSaved };
+	updateSummaryOptimistic(newSaved, updatedMeta);
+	persistGoalCache(meta.goalId, updatedMeta);
+
+	playConfettiCelebration();
+
+	void runOptimisticMutation<DepositResponsePayload>({
+		storageKey,
+		rollback: () => restoreGoalDetailState(snapshot),
+		request: { url, method: 'POST' },
+		onSuccess: (data) => {
+			applyCompletedState(item, data.period, url);
+			updateGoalSummary(data.goal);
+			const reconciled = readSummaryMeta();
+			if (reconciled) persistGoalCache(meta.goalId, reconciled);
+		},
+		errorMessage: getDefaultErrorMessage(),
+	});
+}
+
+export function undoDeposit(item: HTMLElement, url: string): void {
+	const meta = readSummaryMeta();
+	if (!meta) return;
+
+	const amountCents = Number(item.dataset.amountCents ?? 0);
+	const snapshot = captureGoalDetailState();
+	if (!snapshot) return;
+
+	const storageKey = goalCacheKey(meta.goalId);
+	saveSnapshot(storageKey, snapshot);
+
+	const newSaved = Math.max(0, meta.savedCents - amountCents);
+	const updatedMeta = { ...meta, savedCents: newSaved };
+	applyPendingState(item, url);
+	updateSummaryOptimistic(newSaved, updatedMeta);
+	persistGoalCache(meta.goalId, updatedMeta);
+
+	void runOptimisticMutation<DepositResponsePayload>({
+		storageKey,
+		rollback: () => restoreGoalDetailState(snapshot),
+		request: { url, method: 'DELETE' },
+		onSuccess: (data) => {
+			applyPendingState(item, url);
+			updateGoalSummary(data.goal);
+			const reconciled = readSummaryMeta();
+			if (reconciled) persistGoalCache(meta.goalId, reconciled);
+		},
+		errorMessage: getDefaultErrorMessage(),
+	});
 }

@@ -1,4 +1,5 @@
 import { confirmDeposit, undoDeposit } from './deposits';
+import { deleteNotificationOptimistically } from './notifications-optimistic';
 
 const SWIPE_THRESHOLD = 80;
 const HORIZONTAL_LOCK_PX = 10;
@@ -10,19 +11,6 @@ function preventHorizontalBrowserNav(e: TouchEvent, startX: number, startY: numb
 	if (Math.abs(dx) > HORIZONTAL_LOCK_PX && Math.abs(dx) > Math.abs(dy)) {
 		e.preventDefault();
 	}
-}
-
-function htmxRequest(
-	method: 'DELETE',
-	url: string,
-	source: HTMLElement,
-	options: { swap?: string; target?: string | HTMLElement } = {},
-): void {
-	window.htmx.ajax(method, url, {
-		swap: options.swap ?? 'none',
-		source,
-		...(options.target ? { target: options.target } : {}),
-	});
 }
 
 export function initSwipeHandlers(): void {
@@ -60,10 +48,10 @@ export function initSwipeHandlers(): void {
 
 			if (currentX <= -SWIPE_THRESHOLD && depositUrl) {
 				item.style.transform = 'translateX(-100%)';
-				void confirmDeposit(item, depositUrl);
+				confirmDeposit(item, depositUrl);
 			} else if (currentX >= SWIPE_THRESHOLD && undoUrl) {
 				item.style.transform = 'translateX(100%)';
-				void undoDeposit(item, undoUrl);
+				undoDeposit(item, undoUrl);
 			} else {
 				item.style.transform = 'translateX(0)';
 			}
@@ -124,12 +112,14 @@ export function initNotificationSwipe(): void {
 			'touchend',
 			(e) => {
 				const dx = e.changedTouches[0].clientX - startX;
-				const deleteUrl = (el as HTMLElement).dataset.deleteUrl;
-				if (dx <= -SWIPE_THRESHOLD && deleteUrl) {
-					htmxRequest('DELETE', deleteUrl, el as HTMLElement, {
-						target: el,
-						swap: 'delete',
-					});
+				const item = el as HTMLElement;
+				const deleteUrl = item.dataset.deleteUrl;
+				const notificationId = item.dataset.notificationId;
+				const list = document.getElementById('notification-list');
+				const errorMessage = list?.dataset.deleteError ?? 'Could not delete notification';
+
+				if (dx <= -SWIPE_THRESHOLD && deleteUrl && notificationId) {
+					deleteNotificationOptimistically(item, notificationId, deleteUrl, errorMessage);
 				}
 			},
 			{ passive: true },

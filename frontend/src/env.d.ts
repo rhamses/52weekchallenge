@@ -17,6 +17,9 @@ declare module 'cloudflare:workers' {
 		AWS_REGION: string;
 		SES_FROM_EMAIL: string;
 		SNS_PLATFORM_ARN: string;
+		VAPID_PUBLIC_KEY: string;
+		VAPID_PRIVATE_KEY: string;
+		VAPID_SUBJECT: string;
 	}
 }
 
