@@ -14,6 +14,7 @@ const goals = await listGoalsForUser(env.DB, env.CACHE, user.id);
 const unreadCount = await countUnreadNotifications(env.DB, user.id);
 const locale = Astro.locals.locale;
 const dict = getDictionary(locale);
+const emptyNotificationHtml = `<p class="text-[var(--text-muted)]">${dict.notifications_empty}</p>`;
 ---
 
 <AppLayout title={dict.notifications_title} activeNav="notifications" goalsCount={goals.length} unreadCount={unreadCount}>
@@ -23,17 +24,35 @@ const dict = getDictionary(locale);
 			<button
 				type="button"
 				class="text-sm text-brand-primary"
-				hx-delete="/api/notifications"
-				hx-confirm="Clear all notifications?"
-				hx-target="#notification-list"
-				hx-swap="innerHTML"
+				data-clear-notifications
 			>
 				{dict.notifications_clear_all}
 			</button>
 		)}
 	</div>
 
-	<div class="mt-6 space-y-3" id="notification-list">
+	<div
+		class="mt-6 space-y-3"
+		id="notification-list"
+		data-empty-html={emptyNotificationHtml}
+		data-delete-error={dict.notification_delete_error}
+		data-clear-error={dict.notification_clear_error}
+	>
 		<NotificationList notifications={notifications} emptyLabel={dict.notifications_empty} />
 	</div>
+
+	<script is:inline>
+		document.querySelector('[data-clear-notifications]')?.addEventListener('click', () => {
+			if (!confirm('Clear all notifications?')) return;
+			const list = document.getElementById('notification-list');
+			if (!list) return;
+			window.f2wNotifications?.clearAllNotificationsOptimistically(
+				list,
+				'/api/notifications',
+				list.dataset.emptyHtml ?? '',
+				list.dataset.clearError ?? 'Could not clear notifications',
+			);
+			document.querySelector('[data-clear-notifications]')?.remove();
+		});
+	</script>
 </AppLayout>
