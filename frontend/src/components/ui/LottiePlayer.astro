@@ -1,0 +1,29 @@
+---
+interface Props {
+	src: string;
+	class?: string;
+	width?: number;
+	height?: number;
+	loop?: boolean;
+	autoplay?: boolean;
+}
+
+const {
+	src,
+	class: className = '',
+	width = 280,
+	height = 240,
+	loop = true,
+	autoplay = true,
+} = Astro.props;
+---
+
+<canvas
+	data-lottie-src={src}
+	data-lottie-loop={loop ? 'true' : 'false'}
+	data-lottie-autoplay={autoplay ? 'true' : 'false'}
+	width={width}
+	height={height}
+	class={className}
+	aria-hidden="true"
+></canvas>

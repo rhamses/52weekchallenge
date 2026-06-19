@@ -1,0 +1,99 @@
+---
+import '../styles/global.css';
+import { getDictionary, LOCALES, type Dictionary } from '../i18n';
+import type { Locale } from '../lib/types';
+
+interface Props {
+	title?: string;
+	description?: string;
+	showLang?: boolean;
+	bodyClass?: string;
+	ogImage?: string;
+}
+
+const {
+	title = '52 Week Challenge',
+	description = 'Save week by week toward your financial goals',
+	showLang = true,
+	bodyClass = '',
+	ogImage = '/og-image.png',
+} = Astro.props;
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale) as Dictionary;
+const currentLocale = LOCALES.find((l) => l.code === locale) ?? LOCALES[1];
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).href;
+const ogImageUrl = new URL(ogImage, Astro.site ?? Astro.url.origin).href;
+---
+
+<!doctype html>
+<html lang={locale}>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#16A34A" />
+		<link rel="icon" href="/favicon.ico" sizes="48x48" />
+		<link rel="icon" href="/icons/favicon-32x32.png" type="image/png" sizes="32x32" />
+		<link rel="icon" href="/icons/favicon-16x16.png" type="image/png" sizes="16x16" />
+		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+		<link rel="manifest" href="/site.webmanifest" />
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="52 Week Challenge" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:image" content={ogImageUrl} />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:locale" content={locale.replace('-', '_')} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImageUrl} />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+		<title>{title}</title>
+	</head>
+	<body class={bodyClass}>
+		{showLang && (
+			<div class="fixed right-4 top-4 z-50" x-data="{ open: false }">
+				<button
+					type="button"
+					class="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-white text-xl shadow-sm"
+					aria-label={dict.select_language}
+					@click="open = !open"
+				>
+					{currentLocale.emoji}
+				</button>
+				<div
+					x-show="open"
+					x-cloak
+					class="absolute right-0 mt-2 flex flex-col gap-1 rounded-xl border border-[var(--border)] bg-white p-1.5 shadow-lg"
+					@click.away="open = false"
+				>
+					{LOCALES.map((l) => (
+						<form method="POST" action="/api/locale" class="block">
+							<input type="hidden" name="locale" value={l.code} />
+							<input type="hidden" name="redirect" value={Astro.url.pathname} />
+							<button
+								type="submit"
+								aria-label={l.label}
+								class:list={[
+									'flex h-10 w-10 items-center justify-center rounded-lg text-xl hover:bg-[var(--card-strong)]',
+									l.code === locale && 'bg-brand-primary/10',
+								]}
+							>
+								{l.emoji}
+							</button>
+						</form>
+					))}
+				</div>
+			</div>
+		)}
+		<slot />
+		<script>
+			import '../scripts/interactive.ts';
+		</script>
+	</body>
+</html>

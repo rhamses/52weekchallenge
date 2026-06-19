@@ -1,0 +1,27 @@
+---
+import type { Notification } from '../../lib/types';
+
+interface Props {
+	notifications: Notification[];
+	emptyLabel: string;
+}
+
+const { notifications, emptyLabel } = Astro.props;
+---
+
+{notifications.length === 0 ? (
+	<p class="text-[var(--text-muted)]">{emptyLabel}</p>
+) : (
+	notifications.map((n) => (
+		<a
+			href={n.goal_id ? `/goals/${n.goal_id}` : '#'}
+			class="card block p-4 transition hover:shadow-glow"
+			data-notification-item
+			data-delete-url={`/api/notifications/${n.id}`}
+		>
+			<p class="font-semibold">{n.title}</p>
+			<p class="mt-1 text-sm text-[var(--text-muted)]">{n.body}</p>
+			<p class="mt-2 text-xs text-[var(--text-muted)]">{n.created_at.slice(0, 10)}</p>
+		</a>
+	))
+)}

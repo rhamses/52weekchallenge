@@ -1,0 +1,25 @@
+name = "f2w-monitoring"
+main = "src/index.ts"
+compatibility_date = "2025-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+
+[triggers]
+crons = ["0 0 * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "domain-monitor"
+database_id = "8b21eb9b-08fb-47e5-889c-cd2a68181e0b"
+
+[vars]
+AWS_REGION = "us-east-1"

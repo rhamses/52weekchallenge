@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getDictionary } from '../i18n';
+
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale);
+
+if (Astro.locals.user) {
+	return Astro.redirect('/goals');
+}
+
+const oauthError = Astro.url.searchParams.get('error');
+const loginErrorMessage =
+	oauthError === 'account_not_linked'
+		? dict.login_error_account_not_linked
+		: oauthError
+			? dict.login_error_oauth_generic
+			: null;
+---
+
+<BaseLayout title={dict.login_title}>
+	<div class="mx-auto max-w-lg px-4 py-12">
+		<h1 class="font-display text-3xl font-bold leading-tight">{dict.login_title}</h1>
+		<p class="mt-4 text-sm leading-relaxed text-[var(--text-muted)]">{dict.login_subtitle}</p>
+
+		{loginErrorMessage && (
+			<div
+				class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+				role="alert"
+			>
+				{loginErrorMessage}
+			</div>
+		)}
+
+		<div class="mt-10 space-y-4">
+			<a href="/api/auth/login/google" data-no-transition class="btn-secondary flex w-full items-center justify-center gap-3 !py-4">
+				<span class="text-lg">G</span>
+				{dict.login_google}
+			</a>
+			<a href="/api/auth/login/facebook" data-no-transition class="btn-secondary flex w-full items-center justify-center gap-3 !py-4">
+				<span class="text-lg">f</span>
+				{dict.login_facebook}
+			</a>
+		</div>
+
+		<p class="mt-10 text-center text-xs text-[var(--text-muted)]">
+			{dict.login_terms}
+			<a href="/terms" class="underline">{dict.terms_title}</a>
+		</p>
+	</div>
+</BaseLayout>

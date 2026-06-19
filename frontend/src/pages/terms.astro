@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getDictionary } from '../i18n';
+
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale);
+---
+
+<BaseLayout title={dict.terms_title}>
+	<article class="prose prose-sm mx-auto max-w-lg px-4 py-10">
+		<h1 class="font-display text-3xl font-bold">{dict.terms_title}</h1>
+		<p class="text-[var(--text-muted)]">{dict.terms_updated}</p>
+
+		<section class="mt-8 space-y-4 text-[var(--text-primary)]">
+			<h2 class="font-display text-xl font-semibold">1. Acceptance</h2>
+			<p>By using the 52 Week Challenge application, you agree to these Terms and Conditions. If you do not agree, do not use the service.</p>
+
+			<h2 class="font-display text-xl font-semibold">2. Service Description</h2>
+			<p>This app helps you set savings goals and track weekly or monthly deposits. It provides reminders and progress tracking. It is not a bank, financial advisor, or payment processor.</p>
+
+			<h2 class="font-display text-xl font-semibold">3. User Accounts</h2>
+			<p>You sign in through third-party identity providers (Google, Facebook) via AWS Cognito. You are responsible for maintaining the security of your account credentials on those platforms.</p>
+
+			<h2 class="font-display text-xl font-semibold">4. Data and Privacy</h2>
+			<p>We store your goals, deposit history, and preferences to provide the service. Data is synced between your device, Cloudflare KV cache, and D1 database. We do not sell your personal data.</p>
+
+			<h2 class="font-display text-xl font-semibold">5. Notifications</h2>
+			<p>You may receive email and push notifications about savings reminders and milestones. You can manage notifications in the app.</p>
+
+			<h2 class="font-display text-xl font-semibold">6. Disclaimer</h2>
+			<p>Savings projections are estimates only. Actual results depend on your behavior. We make no guarantee that you will reach any financial goal.</p>
+
+			<h2 class="font-display text-xl font-semibold">7. Limitation of Liability</h2>
+			<p>To the maximum extent permitted by law, we are not liable for any indirect, incidental, or consequential damages arising from use of the app.</p>
+
+			<h2 class="font-display text-xl font-semibold">8. Changes</h2>
+			<p>We may update these terms at any time. Continued use after changes constitutes acceptance.</p>
+
+			<h2 class="font-display text-xl font-semibold">9. Contact</h2>
+			<p>For questions, contact support@52weekchallenge.app.</p>
+		</section>
+
+		<a href="/login" class="btn-primary mt-10 inline-flex !w-auto px-8">Back</a>
+	</article>
+</BaseLayout>

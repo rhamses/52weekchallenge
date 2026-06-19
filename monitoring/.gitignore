@@ -1,5 +1,4 @@
 node_modules/
-.tmp/
 dist/
 .astro/
 .wrangler/
@@ -7,4 +6,3 @@ dist/
 .env
 *.pem
 .DS_Store
-bower_components

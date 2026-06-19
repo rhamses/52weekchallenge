@@ -1,0 +1,305 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getDictionary } from '../../i18n';
+import currencies from '../../data/currencies.json';
+
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale);
+const isLoggedIn = !!Astro.locals.user;
+---
+
+<BaseLayout title={dict.goal_title_question}>
+	<div
+		class="mx-auto max-w-lg px-4 py-8"
+		x-data={`goalForm(${JSON.stringify({ currencies, locale, dict, isLoggedIn })})`}
+	>
+		<h1 class="font-display text-3xl font-bold">{dict.goal_title_question}</h1>
+
+		<label class="mt-8 block">
+			<input
+				type="text"
+				x-model="title"
+				maxlength="120"
+				class="input-field"
+				:class="{ 'border-red-500 ring-2 ring-red-500/20': showErrors && errors.title }"
+				placeholder={dict.goal_title_placeholder}
+			/>
+			<p x-show="showErrors && errors.title" x-cloak class="mt-2 text-sm text-red-600" x-text="errors.title"></p>
+		</label>
+
+		<h2 class="mt-10 font-display text-2xl font-bold">{dict.goal_amount_question}</h2>
+		<p class="mt-2 text-sm text-[var(--text-muted)]" x-text="amountHint"></p>
+
+		<div class="relative mt-4" x-data="{ open: false }">
+			<button
+				type="button"
+				@click="open = !open"
+				class="input-field flex items-center justify-between text-left"
+			>
+				<span x-text="selectedCurrencyLabel"></span>
+				<span>▼</span>
+			</button>
+			<div
+				x-show="open"
+				x-cloak
+				@click.away="open = false"
+				class="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-2xl border border-[var(--border)] bg-white shadow-lg"
+			>
+				<input
+					type="search"
+					x-model="currencySearch"
+					class="sticky top-0 w-full border-b border-[var(--border)] px-4 py-3 outline-none"
+					placeholder={dict.currency_search}
+				/>
+				<template x-for="c in filteredCurrencies" :key="c.code">
+					<button
+						type="button"
+						class="block w-full px-4 py-3 text-left hover:bg-[var(--card-strong)]"
+						@click="selectCurrency(c); open = false"
+						x-text="c.name + ' (' + c.code + ')'"
+					></button>
+				</template>
+			</div>
+		</div>
+
+		<div class="mt-8">
+			<div class="mb-2 flex items-center gap-3">
+				<input
+					type="number"
+					min="1"
+					max="100000"
+					step="1"
+					inputmode="decimal"
+					class="w-auto max-w-[10rem] rounded-2xl border-0 bg-lime-300 px-4 py-2 font-display text-2xl font-bold outline-none focus:ring-2 focus:ring-brand-primary/30"
+					:value="amountMajor"
+					@input="onAmountInput($event)"
+					@blur="syncAmountFromInput()"
+				/>
+				<span class="text-sm text-[var(--text-muted)]" x-text="currencySymbol"></span>
+			</div>
+			<input type="range" min="100" max="10000000" step="100" x-model.number="amountCents" class="mt-4 h-3 w-full accent-brand-primary" />
+			<div class="mt-1 flex justify-between text-xs text-[var(--text-muted)]">
+				<span>100</span>
+				<span>100k+</span>
+			</div>
+		</div>
+
+		<div class="card mt-8 p-6">
+			<p class="font-display text-lg font-semibold text-brand-primary" x-text="previewText"></p>
+		</div>
+
+		<label class="mt-6 flex items-center gap-3">
+			<input type="checkbox" x-model="monthly" class="h-5 w-5 rounded accent-brand-primary" />
+			<span>{dict.goal_checkbox_monthly}</span>
+		</label>
+
+		<label class="mt-4 flex items-center gap-3">
+			<input type="checkbox" x-model="useDeadline" class="h-5 w-5 rounded accent-brand-primary" />
+			<span>{dict.goal_checkbox_deadline}</span>
+		</label>
+
+		<button
+			type="button"
+			x-show="useDeadline && deadlineDate"
+			x-cloak
+			@click="showDateModal = true"
+			class="mt-2 text-sm text-brand-primary underline"
+		>
+			{dict.goal_change_date}: <span x-text="deadlineDate"></span>
+		</button>
+		<p x-show="showErrors && errors.deadline" x-cloak class="mt-2 text-sm text-red-600" x-text="errors.deadline"></p>
+
+		<div
+			x-show="showDateModal"
+			x-cloak
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+			@click.self="showDateModal = false"
+		>
+			<div class="card w-full max-w-sm p-6">
+				<h3 class="font-display text-xl font-bold">{dict.deadline_modal_title}</h3>
+				<input type="date" x-model="deadlineDate" :min="minDate" class="input-field mt-4" />
+				<div class="mt-4 flex gap-3">
+					<button type="button" class="btn-secondary flex-1" @click="showDateModal = false">{dict.deadline_modal_cancel}</button>
+					<button type="button" class="btn-primary flex-1 !py-3" @click="confirmDeadline()">{dict.deadline_modal_confirm}</button>
+				</div>
+			</div>
+		</div>
+
+		<button type="button" class="btn-primary mt-10" @click="submit()">
+			{dict.goal_submit}
+		</button>
+	</div>
+
+	<script is:inline>
+		document.addEventListener('alpine:init', () => {
+			Alpine.data('goalForm', (config) => ({
+				title: '',
+				amountCents: 500000,
+				currencyCode: 'USD',
+				currencySearch: '',
+				currencies: config.currencies,
+				monthly: false,
+				useDeadline: false,
+				deadlineDate: '',
+				showDateModal: false,
+				showErrors: false,
+				isLoggedIn: config.isLoggedIn,
+				minDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+
+				get filteredCurrencies() {
+					const q = this.currencySearch.toLowerCase();
+					if (!q) return this.currencies;
+					return this.currencies.filter(
+						(c) => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q),
+					);
+				},
+
+				get selectedCurrencyLabel() {
+					const c = this.currencies.find((x) => x.code === this.currencyCode);
+					return c ? `${c.name} (${c.code})` : this.currencyCode;
+				},
+
+				get amountHint() {
+					return config.dict.goal_amount_hint.replace('{currency}', this.selectedCurrencyLabel);
+				},
+
+				get amountMajor() {
+					return Math.round(this.amountCents / 100);
+				},
+
+				get currencySymbol() {
+					const parts = new Intl.NumberFormat(config.locale, {
+						style: 'currency',
+						currency: this.currencyCode,
+						maximumFractionDigits: 0,
+					}).formatToParts(0);
+					return parts.find((p) => p.type === 'currency')?.value ?? this.currencyCode;
+				},
+
+				onAmountInput(e) {
+					const raw = e.target.value;
+					if (raw === '') return;
+					const major = Math.min(100000, Math.max(1, Math.round(Number(raw))));
+					if (Number.isNaN(major)) return;
+					this.amountCents = major * 100;
+				},
+
+				syncAmountFromInput() {
+					const major = Math.round(this.amountCents / 100);
+					if (major < 1 || Number.isNaN(major)) {
+						this.amountCents = 500000;
+					} else {
+						this.amountCents = Math.min(100000, Math.max(1, major)) * 100;
+					}
+				},
+
+				get plan() {
+					const mode = this.monthly ? 'monthly' : 'weekly';
+					if (this.useDeadline && this.deadlineDate) {
+						const start = new Date();
+						const end = new Date(this.deadlineDate);
+						let count;
+						if (this.monthly) {
+							count = Math.max(1, (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()));
+						} else {
+							count = Math.max(1, Math.ceil((end - start) / (7 * 86400000)));
+						}
+						return { count, installment: Math.ceil(this.amountCents / count), type: this.monthly ? 'month' : 'week' };
+					}
+					if (this.monthly) return { count: 12, installment: Math.ceil(this.amountCents / 12), type: 'month' };
+					return { count: 52, installment: Math.ceil(this.amountCents / 52), type: 'week' };
+				},
+
+				get previewText() {
+					const amt = new Intl.NumberFormat(config.locale, {
+						style: 'currency',
+						currency: this.currencyCode,
+						maximumFractionDigits: 0,
+					}).format(this.plan.installment / 100);
+					const key = this.monthly || this.plan.type === 'month'
+						? 'goal_preview_monthly'
+						: 'goal_preview_weekly';
+					return config.dict[key].replace('{amount}', amt).replace('{count}', this.plan.count);
+				},
+
+				get canSubmit() {
+					return this.title.trim().length >= 3 && this.amountCents > 0
+						&& (!this.useDeadline || (this.deadlineDate && this.deadlineDate > this.minDate));
+				},
+
+				get errors() {
+					const e = { title: '', deadline: '' };
+					if (this.title.trim().length < 3) {
+						e.title = config.dict.goal_error_title_required;
+					}
+					if (this.useDeadline && (!this.deadlineDate || this.deadlineDate <= this.minDate)) {
+						e.deadline = config.dict.goal_error_deadline_required;
+					}
+					return e;
+				},
+
+				selectCurrency(c) {
+					this.currencyCode = c.code;
+				},
+
+				confirmDeadline() {
+					if (this.deadlineDate && this.deadlineDate > this.minDate) {
+						this.showDateModal = false;
+					} else {
+						this.showDateModal = true;
+						if (!this.deadlineDate) this.deadlineDate = this.minDate;
+					}
+				},
+
+				async submit() {
+					if (!this.canSubmit) {
+						this.showErrors = true;
+						if (this.useDeadline && (!this.deadlineDate || this.deadlineDate <= this.minDate)) {
+							this.showDateModal = true;
+						}
+						return;
+					}
+
+					const draft = {
+						title: this.title.trim(),
+						target_amount_cents: this.amountCents,
+						currency_code: this.currencyCode,
+						savings_mode: this.monthly ? 'monthly' : 'weekly',
+						use_custom_deadline: this.useDeadline && !!this.deadlineDate,
+						deadline_date: this.useDeadline ? this.deadlineDate : null,
+					};
+					window.f2wSync?.saveDraftGoal(draft);
+
+					if (this.isLoggedIn) {
+						const res = await fetch('/api/goals', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(draft),
+						});
+						if (res.ok) {
+							window.f2wSync?.clearDraftGoal();
+							window.location.href = '/goals';
+						}
+					} else {
+						window.location.href = '/login';
+					}
+				},
+			}));
+
+			// Open date modal when deadline checkbox is checked
+			Alpine.effect(() => {
+				/* handled in template via x-model on useDeadline - watch in component */
+			});
+		});
+
+		document.addEventListener('change', (e) => {
+			if (e.target?.type === 'checkbox' && e.target.closest('[x-data]')) {
+				const root = e.target.closest('[x-data]');
+				if (e.target.matches('[x-model="useDeadline"]') && e.target.checked) {
+					const alpine = Alpine.$data(root);
+					alpine.showDateModal = true;
+				}
+			}
+		});
+	</script>
+</BaseLayout>

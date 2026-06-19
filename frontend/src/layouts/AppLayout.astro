@@ -1,0 +1,49 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import AppHeader from '../components/app/AppHeader.astro';
+import AppFooter from '../components/app/AppFooter.astro';
+import { getDictionary } from '../i18n';
+
+interface Props {
+	title?: string;
+	activeNav?: 'home' | 'add' | 'notifications';
+	goalsCount?: number;
+	unreadCount?: number;
+}
+
+const { title, activeNav = 'home', goalsCount = 0, unreadCount = 0 } = Astro.props;
+const user = Astro.locals.user!;
+const locale = Astro.locals.locale;
+const dict = getDictionary(locale);
+---
+
+<BaseLayout title={title ?? dict.app_name} showLang={false}>
+	<div class="mx-auto flex min-h-dvh max-w-lg flex-col px-4 pb-24 pt-4">
+		<AppHeader
+			userName={user.name ?? user.email}
+			goalsCount={goalsCount}
+			unreadCount={unreadCount}
+			avatarUrl={user.avatar_url ?? '/assets/avatar.svg'}
+			greeting={dict.header_greeting.replace('{name}', user.name ?? user.email.split('@')[0])}
+			goalsLabel={dict.header_goals_count.replace('{count}', String(goalsCount))}
+		/>
+		<main class="mt-6 flex-1">
+			<slot />
+		</main>
+		<AppFooter activeNav={activeNav} dict={dict} />
+	</div>
+	<script is:inline>
+		if ('serviceWorker' in navigator && 'PushManager' in window) {
+			navigator.serviceWorker.ready.then(async (reg) => {
+				try {
+					const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: new Uint8Array(0) });
+					await fetch('/api/devices/register', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ sns_endpoint_arn: JSON.stringify(sub.toJSON()), platform: 'web' }),
+					});
+				} catch { /* push optional until SNS configured */ }
+			});
+		}
+	</script>
+</BaseLayout>
