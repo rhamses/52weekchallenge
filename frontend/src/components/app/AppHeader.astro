@@ -1,5 +1,6 @@
 ---
 import TablerIcon from '../ui/TablerIcon.astro';
+import LangSwitcher from '../ui/LangSwitcher.astro';
 
 interface Props {
 	userName: string;
@@ -8,9 +9,11 @@ interface Props {
 	avatarUrl: string;
 	greeting: string;
 	goalsLabel: string;
+	locale: string;
+	redirectPath: string;
 }
 
-const { unreadCount, avatarUrl, greeting, goalsLabel } = Astro.props;
+const { unreadCount, avatarUrl, greeting, goalsLabel, locale, redirectPath } = Astro.props;
 ---
 
 <header class="grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-card">
@@ -31,16 +34,19 @@ const { unreadCount, avatarUrl, greeting, goalsLabel } = Astro.props;
 		<p class="font-display text-lg font-semibold">{greeting}</p>
 		<p class="text-sm text-[var(--text-muted)]">{goalsLabel}</p>
 	</div>
-	<a
-		href="/notifications"
-		class="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card-strong)]"
-		aria-label="Notifications"
-	>
-		<TablerIcon name="bell" class="h-6 w-6" />
-		{unreadCount > 0 && (
-			<span class="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary text-[10px] font-semibold text-white">
-				{unreadCount}
-			</span>
-		)}
-	</a>
+	<div class="flex items-center gap-2">
+		<LangSwitcher locale={locale} redirect={redirectPath} variant="header" />
+		<a
+			href="/notifications"
+			class="relative inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--card-strong)]"
+			aria-label="Notifications"
+		>
+			<TablerIcon name="bell" class="h-6 w-6" />
+			{unreadCount > 0 && (
+				<span class="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary text-[10px] font-semibold text-white">
+					{unreadCount}
+				</span>
+			)}
+		</a>
+	</div>
 </header>
