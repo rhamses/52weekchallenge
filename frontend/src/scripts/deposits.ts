@@ -3,6 +3,7 @@ import {
 	saveSnapshot,
 	runOptimisticMutation,
 } from './optimistic-client';
+import { invalidateGoalsListCache } from './goals-optimistic';
 import {
 	formatMoneyCents,
 	formatProgressLabel,
@@ -341,6 +342,7 @@ export function confirmDeposit(item: HTMLElement, url: string): void {
 		onSuccess: (data) => {
 			applyCompletedState(item, data.period, url);
 			updateGoalSummary(data.goal);
+			invalidateGoalsListCache();
 			const reconciled = readSummaryMeta();
 			if (reconciled) persistGoalCache(meta.goalId, reconciled);
 		},
@@ -372,6 +374,7 @@ export function undoDeposit(item: HTMLElement, url: string): void {
 		onSuccess: (data) => {
 			applyPendingState(item, url);
 			updateGoalSummary(data.goal);
+			invalidateGoalsListCache();
 			const reconciled = readSummaryMeta();
 			if (reconciled) persistGoalCache(meta.goalId, reconciled);
 		},

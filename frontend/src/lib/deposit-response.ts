@@ -33,7 +33,7 @@ export async function buildDepositResponse(
 	const goal = await getGoalById(env.DB, env.CACHE, goalId, userId);
 	if (!goal) return null;
 
-	const periods = await getGoalPeriods(env.DB, goalId);
+	const periods = await getGoalPeriods(env.DB, env.CACHE, goalId);
 	const period = periods.find((p) => p.id === periodId);
 	if (!period) return null;
 
