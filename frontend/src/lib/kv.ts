@@ -2,6 +2,7 @@ import type { Env } from './types';
 
 const TTL_GOALS = 300;
 const TTL_GOAL = 300;
+const TTL_PERIODS = 300;
 const TTL_NOTIFICATIONS = 120;
 
 export function kvGoalsKey(userId: string): string {
@@ -10,6 +11,10 @@ export function kvGoalsKey(userId: string): string {
 
 export function kvGoalKey(goalId: string): string {
 	return `f2w:goal:${goalId}`;
+}
+
+export function kvGoalPeriodsKey(goalId: string): string {
+	return `f2w:goal:${goalId}:periods`;
 }
 
 export function kvNotificationsKey(userId: string): string {
@@ -39,7 +44,10 @@ export async function invalidateUserGoals(cache: KVNamespace, userId: string): P
 }
 
 export async function invalidateGoal(cache: KVNamespace, goalId: string): Promise<void> {
-	await cacheDelete(cache, kvGoalKey(goalId));
+	await Promise.all([
+		cacheDelete(cache, kvGoalKey(goalId)),
+		cacheDelete(cache, kvGoalPeriodsKey(goalId)),
+	]);
 }
 
 export async function invalidateUserNotifications(
@@ -61,4 +69,4 @@ export async function invalidateAllForGoal(
 	]);
 }
 
-export { TTL_GOALS, TTL_GOAL, TTL_NOTIFICATIONS };
+export { TTL_GOALS, TTL_GOAL, TTL_PERIODS, TTL_NOTIFICATIONS };

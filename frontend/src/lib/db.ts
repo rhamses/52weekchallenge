@@ -4,10 +4,12 @@ import {
 	cacheGet,
 	cacheSet,
 	kvGoalKey,
+	kvGoalPeriodsKey,
 	kvGoalsKey,
 	kvNotificationsKey,
 	TTL_GOAL,
 	TTL_GOALS,
+	TTL_PERIODS,
 	TTL_NOTIFICATIONS,
 } from './kv';
 
@@ -114,7 +116,24 @@ export async function getGoalById(
 	return row ?? null;
 }
 
-export async function getGoalPeriods(db: D1Database, goalId: string): Promise<GoalPeriod[]> {
+export async function countGoalsForUser(db: D1Database, userId: string): Promise<number> {
+	const row = await db
+		.prepare(
+			`SELECT COUNT(*) as count FROM f2w_goals WHERE user_id = ? AND status != 'archived'`,
+		)
+		.bind(userId)
+		.first<{ count: number }>();
+	return row?.count ?? 0;
+}
+
+export async function getGoalPeriods(
+	db: D1Database,
+	cache: KVNamespace,
+	goalId: string,
+): Promise<GoalPeriod[]> {
+	const cached = await cacheGet<GoalPeriod[]>(cache, kvGoalPeriodsKey(goalId));
+	if (cached) return cached;
+
 	const { results } = await db
 		.prepare(
 			`SELECT p.*, d.note, d.id as deposit_id
@@ -126,7 +145,9 @@ export async function getGoalPeriods(db: D1Database, goalId: string): Promise<Go
 		.bind(goalId)
 		.all<GoalPeriod>();
 
-	return results ?? [];
+	const periods = results ?? [];
+	await cacheSet(cache, kvGoalPeriodsKey(goalId), periods, TTL_PERIODS);
+	return periods;
 }
 
 export async function listNotifications(
