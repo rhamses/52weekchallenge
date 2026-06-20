@@ -49,7 +49,16 @@ cd monitoring
 cp .dev.vars.example .dev.vars
 npm install
 npm run dev
+npm test
 ```
+
+Trigger the scheduled handler locally (uses D1 + `.dev.vars` credentials):
+
+```bash
+cd monitoring && npx wrangler dev --test-scheduled
+```
+
+Edit notification copy in `monitoring/src/templates/` (email, in-app, web push, SNS).
 
 ### Deploy
 
