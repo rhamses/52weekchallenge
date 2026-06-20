@@ -39,13 +39,17 @@ function escapeHtml(text: string): string {
 	return div.innerHTML;
 }
 
+function closeInstallBanner(): void {
+	document.getElementById('pwa-install-banner')?.remove();
+}
+
 function showInstallBanner(labels: InstallLabels, onInstall: () => void): void {
 	if (document.getElementById('pwa-install-banner')) return;
 
 	const banner = document.createElement('div');
 	banner.id = 'pwa-install-banner';
 	banner.className =
-		'fixed bottom-24 left-4 right-4 z-40 mx-auto max-w-lg rounded-2xl border border-[var(--border)] bg-white p-4 shadow-card';
+		'fixed bottom-32 left-4 right-4 z-40 mx-auto max-w-lg rounded-2xl border border-[var(--border)] bg-white p-4 shadow-card';
 	banner.innerHTML = `
 		<p class="font-display text-sm font-semibold">${escapeHtml(labels.title)}</p>
 		${isIos() ? `<p class="mt-1 text-xs text-[var(--text-muted)]">${escapeHtml(labels.iosHint)}</p>` : ''}
@@ -53,7 +57,10 @@ function showInstallBanner(labels: InstallLabels, onInstall: () => void): void {
 	`;
 
 	document.body.appendChild(banner);
-	banner.querySelector('[data-pwa-install]')?.addEventListener('click', onInstall);
+	banner.querySelector('[data-pwa-install]')?.addEventListener('click', () => {
+		closeInstallBanner();
+		onInstall();
+	});
 }
 
 export function initPwaInstall(): void {
@@ -71,7 +78,6 @@ export function initPwaInstall(): void {
 			await deferredPrompt.prompt();
 			await deferredPrompt.userChoice;
 			deferredPrompt = null;
-			document.getElementById('pwa-install-banner')?.remove();
 		});
 	});
 

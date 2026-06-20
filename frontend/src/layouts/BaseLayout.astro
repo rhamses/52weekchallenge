@@ -1,8 +1,8 @@
 ---
 import '../styles/global.css';
-import { getDictionary, LOCALES, type Dictionary } from '../i18n';
+import LangSwitcher from '../components/ui/LangSwitcher.astro';
+import { getDictionary, type Dictionary } from '../i18n';
 import { getWorkerEnv } from '../lib/worker-env';
-import type { Locale } from '../lib/types';
 
 interface Props {
 	title?: string;
@@ -21,7 +21,6 @@ const {
 } = Astro.props;
 const locale = Astro.locals.locale;
 const dict = getDictionary(locale) as Dictionary;
-const currentLocale = LOCALES.find((l) => l.code === locale) ?? LOCALES[1];
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).href;
 const ogImageUrl = new URL(ogImage, Astro.site ?? Astro.url.origin).href;
 
@@ -85,39 +84,7 @@ const pwaUpdateLabels = JSON.stringify({
 		data-pwa-update-labels={pwaUpdateLabels}
 	>
 		{showLang && (
-			<div class="fixed right-4 top-4 z-50" x-data="{ open: false }">
-				<button
-					type="button"
-					class="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-white text-xl shadow-sm"
-					aria-label={dict.select_language}
-					@click="open = !open"
-				>
-					{currentLocale.emoji}
-				</button>
-				<div
-					x-show="open"
-					x-cloak
-					class="absolute right-0 mt-2 flex flex-col gap-1 rounded-xl border border-[var(--border)] bg-white p-1.5 shadow-lg"
-					@click.away="open = false"
-				>
-					{LOCALES.map((l) => (
-						<form method="POST" action="/api/locale" class="block">
-							<input type="hidden" name="locale" value={l.code} />
-							<input type="hidden" name="redirect" value={Astro.url.pathname} />
-							<button
-								type="submit"
-								aria-label={l.label}
-								class:list={[
-									'flex h-10 w-10 items-center justify-center rounded-lg text-xl hover:bg-[var(--card-strong)]',
-									l.code === locale && 'bg-brand-primary/10',
-								]}
-							>
-								{l.emoji}
-							</button>
-						</form>
-					))}
-				</div>
-			</div>
+			<LangSwitcher locale={locale} redirect={Astro.url.pathname} variant="floating" />
 		)}
 		<slot />
 		<div
