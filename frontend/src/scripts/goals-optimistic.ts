@@ -6,14 +6,14 @@ import {
 } from './optimistic-client';
 import {
 	formatMoneyCents,
-	formatProgressLabel,
 	formatGoalCreatedAtLabel,
 	progressPercent,
 } from './client-format';
-import type { Goal } from '@/lib/types';
+import type { Goal, GoalWithProgress } from '@/lib/types';
 
 const PENDING_CREATE_KEY = 'goals:pending_create';
 const DELETED_IDS_KEY = 'goals:deleted_ids';
+const GOALS_LIST_TTL_MS = 300_000;
 
 interface PendingGoal {
 	id: string;
@@ -33,6 +33,39 @@ interface DraftPayload {
 	savings_mode: string;
 	use_custom_deadline: boolean;
 	deadline_date: string | null;
+}
+
+interface GoalsListCache {
+	goals: GoalWithProgress[];
+	fetchedAt: number;
+}
+
+const prefetchedGoals = new Set<string>();
+
+function goalsListCacheKey(userId: string): string {
+	return `goals:list:${userId}`;
+}
+
+export function invalidateGoalsListCache(userId?: string): void {
+	const resolved =
+		userId ??
+		document.querySelector<HTMLElement>('[data-goals-list]')?.dataset.userId ??
+		document.querySelector<HTMLElement>('[data-user-id]')?.dataset.userId;
+	if (resolved) removeCache(goalsListCacheKey(resolved));
+}
+
+function getGoalsListCache(userId: string): GoalsListCache | null {
+	const cached = getCache<GoalsListCache>(goalsListCacheKey(userId));
+	if (!cached) return null;
+	if (Date.now() - cached.fetchedAt > GOALS_LIST_TTL_MS) return null;
+	return cached;
+}
+
+function setGoalsListCache(userId: string, goals: GoalWithProgress[]): void {
+	setCache(goalsListCacheKey(userId), {
+		goals,
+		fetchedAt: Date.now(),
+	} satisfies GoalsListCache);
 }
 
 function getPendingGoals(): PendingGoal[] {
@@ -69,13 +102,22 @@ function unmarkGoalDeleted(goalId: string): void {
 	else removeCache(DELETED_IDS_KEY);
 }
 
+function escapeHtml(text: string): string {
+	const div = document.createElement('div');
+	div.textContent = text;
+	return div.innerHTML;
+}
+
 function renderGoalCard(
-	goal: PendingGoal | Goal,
+	goal: PendingGoal | Goal | GoalWithProgress,
 	locale: string,
 	progressLabel: string,
 	createdAtTemplate: string,
 ): HTMLElement {
-	const percent = progressPercent(goal.saved_amount_cents, goal.target_amount_cents);
+	const percent =
+		'progress_percent' in goal && goal.progress_percent != null
+			? goal.progress_percent
+			: progressPercent(goal.saved_amount_cents, goal.target_amount_cents);
 	const formattedTarget = formatMoneyCents(goal.target_amount_cents, goal.currency_code, locale);
 	const formattedSaved = formatMoneyCents(goal.saved_amount_cents, goal.currency_code, locale);
 	const createdLabel = formatGoalCreatedAtLabel(goal.created_at, locale, createdAtTemplate);
@@ -104,23 +146,47 @@ function renderGoalCard(
 		</div>
 	`;
 
+	bindGoalCardPrefetch(a);
 	return a;
 }
 
-function escapeHtml(text: string): string {
-	const div = document.createElement('div');
-	div.textContent = text;
-	return div.innerHTML;
+function goalsFingerprint(goals: GoalWithProgress[]): string {
+	return JSON.stringify(
+		goals.map((g) => ({
+			id: g.id,
+			title: g.title,
+			saved_amount_cents: g.saved_amount_cents,
+			target_amount_cents: g.target_amount_cents,
+			status: g.status,
+		})),
+	);
 }
 
-export function hydrateGoalsList(): void {
-	const list = document.querySelector<HTMLElement>('[data-goals-list]');
-	if (!list) return;
+function rebuildGoalsListDom(
+	list: HTMLElement,
+	goals: (PendingGoal | Goal | GoalWithProgress)[],
+	locale: string,
+	progressLabel: string,
+	createdAtTemplate: string,
+): void {
+	const deletedIds = new Set(getDeletedIds());
+	const emptyEl = list.querySelector<HTMLElement>('[data-goals-empty]');
+	const fragment = document.createDocumentFragment();
 
-	const locale = list.dataset.locale ?? 'pt-BR';
-	const progressLabel = list.dataset.progressTemplate ?? '{percent}%';
-	const createdAtTemplate = list.dataset.createdTemplate ?? '';
+	for (const goal of goals) {
+		if (deletedIds.has(goal.id)) continue;
+		fragment.appendChild(renderGoalCard(goal, locale, progressLabel, createdAtTemplate));
+	}
 
+	list.querySelectorAll('[data-goal-card]').forEach((card) => card.remove());
+	list.appendChild(fragment);
+
+	if (emptyEl) {
+		emptyEl.hidden = list.querySelectorAll('[data-goal-card]').length > 0;
+	}
+}
+
+function applyDeletedOverlay(list: HTMLElement): void {
 	const deletedIds = new Set(getDeletedIds());
 	list.querySelectorAll<HTMLElement>('[data-goal-card]').forEach((card) => {
 		const goalId = card.dataset.goalCard;
@@ -130,19 +196,104 @@ export function hydrateGoalsList(): void {
 			card.classList.remove('hidden');
 		}
 	});
+}
 
-	const pending = getPendingGoals();
-	for (const goal of pending) {
+function applyPendingOverlay(
+	list: HTMLElement,
+	locale: string,
+	progressLabel: string,
+	createdAtTemplate: string,
+): void {
+	for (const goal of getPendingGoals()) {
 		if (document.querySelector(`[data-goal-card="${goal.id}"]`)) continue;
-		const card = renderGoalCard(goal, locale, progressLabel, createdAtTemplate);
-		list.prepend(card);
+		list.prepend(renderGoalCard(goal, locale, progressLabel, createdAtTemplate));
+	}
+}
+
+function updateEmptyState(list: HTMLElement): void {
+	const emptyEl = list.querySelector<HTMLElement>('[data-goals-empty]');
+	if (!emptyEl) return;
+	const visibleCards = list.querySelectorAll<HTMLElement>('[data-goal-card]:not(.hidden)');
+	emptyEl.hidden = visibleCards.length > 0;
+}
+
+export function prefetchGoalDetail(goalId: string): void {
+	if (prefetchedGoals.has(goalId)) return;
+	prefetchedGoals.add(goalId);
+
+	const link = document.createElement('link');
+	link.rel = 'prefetch';
+	link.as = 'document';
+	link.href = `/goals/${goalId}`;
+	document.head.appendChild(link);
+
+	void fetch(`/api/goals/${goalId}`, { credentials: 'same-origin' }).catch(() => {
+		prefetchedGoals.delete(goalId);
+	});
+}
+
+function bindGoalCardPrefetch(card: HTMLElement): void {
+	const goalId = card.dataset.goalCard;
+	if (!goalId || card.dataset.pendingGoal) return;
+
+	const prefetchOnce = () => prefetchGoalDetail(goalId);
+	card.addEventListener('pointerenter', prefetchOnce, { once: true, passive: true });
+	card.addEventListener('touchstart', prefetchOnce, { once: true, passive: true });
+}
+
+function bindGoalCardPrefetchAll(root: ParentNode = document): void {
+	root.querySelectorAll<HTMLElement>('[data-goal-card]').forEach(bindGoalCardPrefetch);
+}
+
+async function revalidateGoalsList(
+	list: HTMLElement,
+	userId: string,
+	locale: string,
+	progressLabel: string,
+	createdAtTemplate: string,
+): Promise<void> {
+	try {
+		const res = await fetch('/api/goals', { credentials: 'same-origin' });
+		if (!res.ok) return;
+
+		const data = (await res.json()) as { goals: GoalWithProgress[] };
+		const cached = getGoalsListCache(userId);
+		const previousFingerprint = cached ? goalsFingerprint(cached.goals) : null;
+		const nextFingerprint = goalsFingerprint(data.goals);
+
+		setGoalsListCache(userId, data.goals);
+
+		if (previousFingerprint !== nextFingerprint) {
+			rebuildGoalsListDom(list, data.goals, locale, progressLabel, createdAtTemplate);
+			applyPendingOverlay(list, locale, progressLabel, createdAtTemplate);
+			updateEmptyState(list);
+		}
+	} catch {
+		/* offline or transient error */
+	}
+}
+
+export function hydrateGoalsList(): void {
+	const list = document.querySelector<HTMLElement>('[data-goals-list]');
+	if (!list) return;
+
+	const userId = list.dataset.userId;
+	const locale = list.dataset.locale ?? 'pt-BR';
+	const progressLabel = list.dataset.progressTemplate ?? '{percent}%';
+	const createdAtTemplate = list.dataset.createdTemplate ?? '';
+
+	if (userId) {
+		const cached = getGoalsListCache(userId);
+		if (cached?.goals.length) {
+			rebuildGoalsListDom(list, cached.goals, locale, progressLabel, createdAtTemplate);
+		}
+		void revalidateGoalsList(list, userId, locale, progressLabel, createdAtTemplate);
 	}
 
-	const emptyEl = list.querySelector('[data-goals-empty]');
-	if (emptyEl) {
-		const visibleCards = list.querySelectorAll('a.goal-card, .goal-card');
-		emptyEl.hidden = visibleCards.length > 0;
-	}
+	applyPendingOverlay(list, locale, progressLabel, createdAtTemplate);
+	applyDeletedOverlay(list);
+	updateEmptyState(list);
+	bindGoalCardPrefetchAll(list);
 }
 
 export function createGoalOptimistically(
@@ -165,6 +316,7 @@ export function createGoalOptimistically(
 	};
 
 	addPendingGoal(pending);
+	invalidateGoalsListCache();
 	const storageKey = `goals:create:${tempId}`;
 	saveSnapshot(storageKey, pending);
 
@@ -183,6 +335,7 @@ export function createGoalOptimistically(
 			const existing = document.querySelector<HTMLElement>(`[data-goal-card="${tempId}"]`);
 			removePendingGoal(tempId);
 			clearSnapshot(storageKey);
+			invalidateGoalsListCache();
 			if (existing) {
 				existing.replaceWith(
 					renderGoalCard(data.goal, locale, progressLabel, createdAtTemplate),
@@ -199,6 +352,7 @@ export function createGoalOptimistically(
 
 export function deleteGoalOptimistically(goalId: string, deleteUrl: string, errorMessage: string): void {
 	markGoalDeleted(goalId);
+	invalidateGoalsListCache();
 	const storageKey = `goals:delete:${goalId}`;
 	saveSnapshot(storageKey, { goalId });
 
@@ -212,6 +366,7 @@ export function deleteGoalOptimistically(goalId: string, deleteUrl: string, erro
 		onSuccess: () => {
 			unmarkGoalDeleted(goalId);
 			clearSnapshot(storageKey);
+			invalidateGoalsListCache();
 			document.querySelector(`[data-goal-card="${goalId}"]`)?.remove();
 		},
 		errorMessage,

@@ -6,7 +6,7 @@ import { getDictionary } from '../../i18n';
 import {
 	getGoalById,
 	getGoalPeriods,
-	listGoalsForUser,
+	countGoalsForUser,
 	countUnreadNotifications,
 } from '../../lib/db';
 import { getWorkerEnv } from '../../lib/worker-env';
@@ -21,9 +21,11 @@ const env = getWorkerEnv();
 const goal = await getGoalById(env.DB, env.CACHE, id, user.id);
 if (!goal) return Astro.redirect('/goals');
 
-const periods = await getGoalPeriods(env.DB, id);
-const goals = await listGoalsForUser(env.DB, env.CACHE, user.id);
-const unreadCount = await countUnreadNotifications(env.DB, user.id);
+const [periods, goalsCount, unreadCount] = await Promise.all([
+	getGoalPeriods(env.DB, env.CACHE, id),
+	countGoalsForUser(env.DB, user.id),
+	countUnreadNotifications(env.DB, user.id),
+]);
 const locale = Astro.locals.locale;
 const dict = getDictionary(locale);
 
@@ -33,7 +35,7 @@ const depositLabels = JSON.stringify({
 });
 ---
 
-<AppLayout title={goal.title} activeNav="home" goalsCount={goals.length} unreadCount={unreadCount}>
+<AppLayout title={goal.title} activeNav="home" goalsCount={goalsCount} unreadCount={unreadCount}>
 	<p class="text-sm font-medium text-[var(--text-muted)]">{dict.goal_details_title}</p>
 
 	<div id="goal-summary-mount">

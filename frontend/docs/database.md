@@ -28,6 +28,7 @@ All tables use the `f2w_` prefix on the shared D1 database `domain-monitor`.
 
 - `f2w:user:{userId}:goals` — goal list (TTL 5 min)
 - `f2w:goal:{goalId}` — goal detail (TTL 5 min)
+- `f2w:goal:{goalId}:periods` — goal periods (TTL 5 min)
 - `f2w:user:{userId}:notifications` — notifications (TTL 2 min)
 
 ## Apply migrations

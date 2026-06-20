@@ -28,6 +28,7 @@ const pushLabels = JSON.stringify({
 	<div
 		class="mx-auto flex min-h-dvh max-w-lg flex-col px-4 pb-28 pt-4"
 		data-push-labels={pushLabels}
+		data-user-id={user.id}
 	>
 		<AppHeader
 			userName={user.name ?? user.email}
