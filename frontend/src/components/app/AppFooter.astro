@@ -1,5 +1,6 @@
 ---
 import TablerIcon from '../ui/TablerIcon.astro';
+import GlassFilter from '../ui/GlassFilter.astro';
 import type { Dictionary } from '../../i18n';
 
 interface Props {
@@ -15,31 +16,35 @@ const items = [
 ];
 ---
 
-<nav class="fixed bottom-0 left-0 right-0 z-40 border-t border-[var(--border)] bg-white/95 backdrop-blur">
-	<div class="mx-auto flex max-w-lg items-center justify-around px-4 py-3">
+<div class="nav-glass-dock">
+	<nav class="nav-glass" data-active-nav={activeNav} aria-label="Main navigation">
+		<GlassFilter />
+		<div class="nav-glass__indicator" aria-hidden="true"></div>
+
 		{items.map((item) => (
 			<a
 				href={item.href}
-				class:list={['nav-item', item.key === activeNav && 'is-active']}
+				class:list={['nav-glass__item', item.key === activeNav && 'is-active']}
+				data-nav={item.key}
+				aria-label={item.label}
 				data-no-transition={item.key === 'add' ? undefined : ''}
 			>
-				<span class:list={[
-					'flex h-12 w-12 items-center justify-center rounded-2xl',
-					item.key === 'add' && 'bg-brand-primary text-white shadow-glow',
-					item.key === activeNav && item.key !== 'add' && 'bg-brand-primary/10',
-				]}>
+				<span class="nav-glass__icon-wrap">
 					<TablerIcon name={item.icon} class="h-6 w-6" />
 				</span>
-				<span>{item.label}</span>
 			</a>
 		))}
-		<form method="POST" action="/api/auth/logout" class="nav-item">
-			<button type="submit" class="flex flex-col items-center gap-1">
-				<span class="flex h-12 w-12 items-center justify-center rounded-2xl">
+
+		<form method="POST" action="/api/auth/logout" class="nav-glass__item m-0" data-nav="logout">
+			<button
+				type="submit"
+				aria-label={dict.nav_logout}
+				class="flex w-full items-center justify-center border-0 bg-transparent p-0 font-inherit text-inherit"
+			>
+				<span class="nav-glass__icon-wrap">
 					<TablerIcon name="logout" class="h-6 w-6" />
 				</span>
-				<span>{dict.nav_logout}</span>
 			</button>
 		</form>
-	</div>
-</nav>
+	</nav>
+</div>

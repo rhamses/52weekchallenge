@@ -35,6 +35,8 @@
   "goal_progress": "{percent}% economizado",
   "history_title": "Histórico de economia",
   "history_deposited": "Valor Depositado",
+  "history_deposit_pending": "Valor a depositar",
+  "history_deposit_due_by": "Depositar até: {day} de {month} de {year}",
   "history_deposited_at": "{day} de {month} de {year}",
   "history_swipe_hint": "Deslize à esquerda para depositar · direita para desfazer",
   "goals_list_title": "Meus objetivos",

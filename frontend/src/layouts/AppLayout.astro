@@ -26,7 +26,7 @@ const pushLabels = JSON.stringify({
 
 <BaseLayout title={title ?? dict.app_name} showLang={false}>
 	<div
-		class="mx-auto flex min-h-dvh max-w-lg flex-col px-4 pb-24 pt-4"
+		class="mx-auto flex min-h-dvh max-w-lg flex-col px-4 pb-28 pt-4"
 		data-push-labels={pushLabels}
 	>
 		<AppHeader
@@ -36,6 +36,8 @@ const pushLabels = JSON.stringify({
 			avatarUrl={user.avatar_url ?? '/assets/avatar.svg'}
 			greeting={dict.header_greeting.replace('{name}', user.name ?? user.email.split('@')[0])}
 			goalsLabel={dict.header_goals_count.replace('{count}', String(goalsCount))}
+			locale={locale}
+			redirectPath={Astro.url.pathname}
 		/>
 		<main class="mt-6 flex-1">
 			<slot />
@@ -45,7 +47,7 @@ const pushLabels = JSON.stringify({
 
 	<div
 		id="push-banner"
-		class="fixed bottom-24 left-4 right-4 z-40 mx-auto hidden max-w-lg rounded-2xl border border-[var(--border)] bg-white p-4 shadow-card"
+		class="fixed bottom-32 left-4 right-4 z-40 mx-auto hidden max-w-lg rounded-2xl border border-[var(--border)] bg-white p-4 shadow-card"
 		aria-live="polite"
 	></div>
 </BaseLayout>

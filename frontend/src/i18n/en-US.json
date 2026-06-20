@@ -35,6 +35,8 @@
   "goal_progress": "{percent}% saved",
   "history_title": "Savings history",
   "history_deposited": "Amount deposited",
+  "history_deposit_pending": "Amount to deposit",
+  "history_deposit_due_by": "Deposit by: {month} {day}, {year}",
   "history_deposited_at": "{month} {day}, {year}",
   "history_swipe_hint": "Swipe left to deposit · right to undo",
   "goals_list_title": "My goals",

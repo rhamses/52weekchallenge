@@ -32,6 +32,8 @@ interface PeriodSnapshot {
 	undoUrl?: string;
 	dateText: string;
 	dateHidden: boolean;
+	labelText: string;
+	dueDateHidden: boolean;
 }
 
 interface GoalDetailSnapshot {
@@ -55,6 +57,14 @@ export function revertSwipeItem(item: HTMLElement): void {
 
 function getCompletedDateEl(item: HTMLElement): HTMLElement | null {
 	return item.querySelector('[data-completed-date]');
+}
+
+function getPeriodLabelEl(item: HTMLElement): HTMLElement | null {
+	return item.querySelector('[data-period-label]');
+}
+
+function getDueDateEl(item: HTMLElement): HTMLElement | null {
+	return item.querySelector('[data-due-date]');
 }
 
 function getSummaryEl(): HTMLElement | null {
@@ -88,6 +98,14 @@ export function applyCompletedState(item: HTMLElement, period: PeriodSummary, de
 	delete item.dataset.depositUrl;
 	item.dataset.undoUrl = depositUrl;
 
+	const labelEl = getPeriodLabelEl(item);
+	if (labelEl && item.dataset.depositedLabel) {
+		labelEl.textContent = item.dataset.depositedLabel;
+	}
+
+	const dueEl = getDueDateEl(item);
+	if (dueEl) dueEl.hidden = true;
+
 	const dateEl = getCompletedDateEl(item);
 	if (dateEl && period.completed_at_label) {
 		dateEl.textContent = period.completed_at_label;
@@ -100,6 +118,17 @@ export function applyPendingState(item: HTMLElement, depositUrl: string): void {
 	item.classList.remove('is-completed');
 	item.dataset.depositUrl = depositUrl;
 	delete item.dataset.undoUrl;
+
+	const labelEl = getPeriodLabelEl(item);
+	if (labelEl && item.dataset.pendingLabel) {
+		labelEl.textContent = item.dataset.pendingLabel;
+	}
+
+	const dueEl = getDueDateEl(item);
+	if (dueEl) {
+		if (item.dataset.dueDateLabel) dueEl.textContent = item.dataset.dueDateLabel;
+		dueEl.hidden = false;
+	}
 
 	const dateEl = getCompletedDateEl(item);
 	if (dateEl) {
@@ -180,6 +209,8 @@ export function captureGoalDetailState(): GoalDetailSnapshot | null {
 		const id = item.dataset.periodId;
 		if (!id) return;
 		const dateEl = getCompletedDateEl(item);
+		const labelEl = getPeriodLabelEl(item);
+		const dueEl = getDueDateEl(item);
 		periods.push({
 			id,
 			isCompleted: item.classList.contains('is-completed'),
@@ -187,6 +218,8 @@ export function captureGoalDetailState(): GoalDetailSnapshot | null {
 			undoUrl: item.dataset.undoUrl,
 			dateText: dateEl?.textContent ?? '',
 			dateHidden: dateEl?.hidden ?? true,
+			labelText: labelEl?.textContent ?? '',
+			dueDateHidden: dueEl?.hidden ?? true,
 		});
 	});
 
@@ -216,6 +249,12 @@ export function restoreGoalDetailState(snapshot: GoalDetailSnapshot): void {
 			dateEl.textContent = p.dateText;
 			dateEl.hidden = p.dateHidden;
 		}
+
+		const labelEl = getPeriodLabelEl(item);
+		if (labelEl) labelEl.textContent = p.labelText;
+
+		const dueEl = getDueDateEl(item);
+		if (dueEl) dueEl.hidden = p.dueDateHidden;
 	}
 
 	persistGoalCache(snapshot.summary.goalId, snapshot.summary);
