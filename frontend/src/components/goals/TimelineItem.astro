@@ -7,17 +7,29 @@ interface Props {
 	currency: string;
 	locale: string;
 	depositedLabel: string;
+	pendingLabel: string;
+	depositDueByTemplate: string;
 	depositedAtTemplate: string;
 	goalId: string;
 }
 
-const { period, currency, locale, depositedLabel, depositedAtTemplate, goalId } = Astro.props;
+const {
+	period,
+	currency,
+	locale,
+	depositedLabel,
+	pendingLabel,
+	depositDueByTemplate,
+	depositedAtTemplate,
+	goalId,
+} = Astro.props;
 const isCompleted = period.status === 'completed';
 const formatted = formatMoney(period.amount_cents, currency, locale);
 const completedDate =
 	isCompleted && period.completed_at
 		? formatGoalCreatedAtLabel(period.completed_at, locale, depositedAtTemplate)
 		: null;
+const dueDateLabel = formatGoalCreatedAtLabel(period.due_date, locale, depositDueByTemplate);
 const depositUrl = `/api/goals/${goalId}/periods/${period.id}/deposit`;
 const undoUrl = depositUrl;
 ---
@@ -26,6 +38,9 @@ const undoUrl = depositUrl;
 	class:list={['timeline-item', isCompleted && 'is-completed']}
 	data-period-id={period.id}
 	data-amount-cents={period.amount_cents}
+	data-pending-label={pendingLabel}
+	data-deposited-label={depositedLabel}
+	data-due-date-label={dueDateLabel}
 	data-swipe-item
 	data-deposit-url={!isCompleted ? depositUrl : undefined}
 	data-undo-url={isCompleted ? undoUrl : undefined}
@@ -34,8 +49,21 @@ const undoUrl = depositUrl;
 		{period.period_index}
 	</div>
 	<div class="min-w-0 flex-1">
-		<p class="font-semibold">{depositedLabel}</p>
-		{period.note && <p class="text-sm text-[var(--text-muted)]">{period.note}</p>}
+		<p class="font-semibold" data-period-label>
+			{isCompleted ? depositedLabel : pendingLabel}
+		</p>
+		<p
+			class="text-sm font-light text-[var(--text-muted)]"
+			data-due-date
+			hidden={isCompleted}
+		>
+			{dueDateLabel}
+		</p>
+		{period.note && (
+			<p class="text-sm text-[var(--text-muted)]" data-period-note hidden={!isCompleted}>
+				{period.note}
+			</p>
+		)}
 	</div>
 	<p class="text-right font-semibold">
 		{formatted}

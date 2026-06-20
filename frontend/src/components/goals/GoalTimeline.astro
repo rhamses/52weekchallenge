@@ -7,10 +7,13 @@ interface Props {
 	periods: GoalPeriod[];
 	locale: string;
 	depositedLabel: string;
+	pendingLabel: string;
+	depositDueByTemplate: string;
 	depositedAtTemplate: string;
 }
 
-const { goal, periods, locale, depositedLabel, depositedAtTemplate } = Astro.props;
+const { goal, periods, locale, depositedLabel, pendingLabel, depositDueByTemplate, depositedAtTemplate } =
+	Astro.props;
 ---
 
 <div class="relative mt-6 space-y-4">
@@ -20,6 +23,8 @@ const { goal, periods, locale, depositedLabel, depositedAtTemplate } = Astro.pro
 			currency={goal.currency_code}
 			locale={locale}
 			depositedLabel={depositedLabel}
+			pendingLabel={pendingLabel}
+			depositDueByTemplate={depositDueByTemplate}
 			depositedAtTemplate={depositedAtTemplate}
 			goalId={goal.id}
 		/>
