@@ -1,4 +1,6 @@
 import webpush from 'web-push';
+import { renderTemplate } from './lib/render-template';
+import reminderWebPushTemplate from './templates/reminder-web-push';
 
 export interface PushSubscriptionJSON {
 	endpoint: string;
@@ -31,12 +33,18 @@ export async function sendWebPush(
 
 	webpush.setVapidDetails(env.VAPID_SUBJECT, env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
 
-	const body = JSON.stringify({
+	const templateVars: Record<string, string> = {
 		title: payload.title,
 		body: payload.body,
-		goalId: payload.goalId ?? null,
-		url: payload.url ?? (payload.goalId ? `/goals/${payload.goalId}` : '/notifications'),
-	});
+		goalId: payload.goalId ?? '',
+	};
 
-	await webpush.sendNotification(subscription, body);
+	const rendered = {
+		title: renderTemplate(reminderWebPushTemplate.title, templateVars),
+		body: renderTemplate(reminderWebPushTemplate.body, templateVars),
+		goalId: renderTemplate(reminderWebPushTemplate.goalId, templateVars),
+		url: payload.url ?? renderTemplate(reminderWebPushTemplate.url, templateVars),
+	};
+
+	await webpush.sendNotification(subscription, JSON.stringify(rendered));
 }
