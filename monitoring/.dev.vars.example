@@ -6,9 +6,9 @@ SES_FROM_EMAIL=
 SNS_PLATFORM_ARN=
 
 # Web Push (same keys as frontend)
-VAPID_PUBLIC_KEY=BHQo40sM6T0s4mZVsqHJc05pPbVy8TYFhuSTUAY2nsqFNP3uMwKaBRlaf2pqdeyHWSfrHEm4i9sieIdXu7k21Xc
+VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
-VAPID_SUBJECT=mailto:domains@ambiente1.com.br
+VAPID_SUBJECT=
 
 # wrangler secret put VAPID_PRIVATE_KEY
 # wrangler secret put AWS_ACCESS_KEY_ID
