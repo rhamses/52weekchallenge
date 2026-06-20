@@ -1,23 +1,25 @@
+import {
+	ensurePushSubscription,
+	registerPushSubscriptionOnServer,
+	VAPID_STORAGE_KEY,
+} from '../lib/push-client-core';
+import { showAppError } from './optimistic-client';
+
 const PUSH_DISMISSED_KEY = 'f2w_push_dismissed';
 
-interface PushLabels {
+export interface PushLabels {
 	title: string;
 	body: string;
 	allow: string;
 	dismiss: string;
-}
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-	const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-	const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-	const raw = atob(base64);
-	const arr = new Uint8Array(raw.length);
-	for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-	return arr;
+	errorGeneric: string;
+	errorPermissionDenied: string;
+	errorRegisterFailed: string;
 }
 
 function getVapidKey(): string | null {
-	return document.body.dataset.vapidPublicKey ?? null;
+	const key = document.body.dataset.vapidPublicKey?.trim();
+	return key || null;
 }
 
 function getLabels(): PushLabels | null {
@@ -35,34 +37,60 @@ function isPushSupported(): boolean {
 	return 'Notification' in window && 'PushManager' in window && 'serviceWorker' in navigator;
 }
 
-async function subscribeAndRegister(): Promise<boolean> {
+function resolveRegisterError(labels: PushLabels): string {
+	return labels.errorRegisterFailed;
+}
+
+async function ensureServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
+	await navigator.serviceWorker.register('/sw.js');
+	return navigator.serviceWorker.ready;
+}
+
+export async function subscribeAndRegister(labels: PushLabels): Promise<boolean> {
 	const vapidKey = getVapidKey();
-	if (!vapidKey) return false;
-
-	const permission = await Notification.requestPermission();
-	if (permission !== 'granted') return false;
-
-	const registration = await navigator.serviceWorker.ready;
-	let subscription = await registration.pushManager.getSubscription();
-
-	if (!subscription) {
-		subscription = await registration.pushManager.subscribe({
-			userVisibleOnly: true,
-			applicationServerKey: urlBase64ToUint8Array(vapidKey),
-		});
+	if (!vapidKey) {
+		showAppError(labels.errorGeneric);
+		return false;
 	}
 
-	const res = await fetch('/api/devices/register', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		credentials: 'same-origin',
-		body: JSON.stringify({
-			platform: 'web',
-			push_subscription: subscription.toJSON(),
-		}),
-	});
+	try {
+		const permission = await Notification.requestPermission();
+		if (permission !== 'granted') {
+			showAppError(labels.errorPermissionDenied);
+			return false;
+		}
 
-	return res.ok;
+		const registration = await ensureServiceWorkerRegistration();
+		const storedVapidKey = localStorage.getItem(VAPID_STORAGE_KEY);
+		const subscription = await ensurePushSubscription(registration, vapidKey, storedVapidKey);
+		const subscriptionJson = subscription.toJSON();
+
+		if (!subscriptionJson.endpoint || !subscriptionJson.keys?.p256dh || !subscriptionJson.keys?.auth) {
+			showAppError(labels.errorGeneric);
+			return false;
+		}
+
+		const result = await registerPushSubscriptionOnServer({
+			endpoint: subscriptionJson.endpoint,
+			expirationTime: subscriptionJson.expirationTime ?? null,
+			keys: {
+				p256dh: subscriptionJson.keys.p256dh,
+				auth: subscriptionJson.keys.auth,
+			},
+		});
+
+		if (!result.ok) {
+			showAppError(resolveRegisterError(labels));
+			return false;
+		}
+
+		localStorage.setItem(VAPID_STORAGE_KEY, vapidKey);
+		return true;
+	} catch (err) {
+		console.error('[push] subscribeAndRegister failed', err);
+		showAppError(labels.errorGeneric);
+		return false;
+	}
 }
 
 function hideBanner(root: HTMLElement): void {
@@ -84,9 +112,24 @@ function showBanner(root: HTMLElement, labels: PushLabels): void {
 	`;
 
 	root.querySelector('[data-push-dismiss]')?.addEventListener('click', () => hideBanner(root));
-	root.querySelector('[data-push-allow]')?.addEventListener('click', async () => {
-		const ok = await subscribeAndRegister();
-		if (ok) hideBanner(root);
+
+	const allowButton = root.querySelector<HTMLButtonElement>('[data-push-allow]');
+	allowButton?.addEventListener('click', async () => {
+		if (!allowButton || allowButton.disabled) return;
+
+		allowButton.disabled = true;
+		const originalText = allowButton.textContent;
+		allowButton.textContent = '…';
+
+		try {
+			const ok = await subscribeAndRegister(labels);
+			if (ok) hideBanner(root);
+		} finally {
+			if (!root.classList.contains('hidden')) {
+				allowButton.disabled = false;
+				allowButton.textContent = originalText;
+			}
+		}
 	});
 }
 
@@ -98,16 +141,20 @@ function escapeHtml(text: string): string {
 
 export async function initPushClient(): Promise<void> {
 	if (!isPushSupported()) return;
-	if (localStorage.getItem(PUSH_DISMISSED_KEY)) return;
+
+	const labels = getLabels();
+	if (!labels) return;
+
 	if (Notification.permission === 'granted') {
-		void subscribeAndRegister();
+		void subscribeAndRegister(labels);
 		return;
 	}
+
+	if (localStorage.getItem(PUSH_DISMISSED_KEY)) return;
 	if (Notification.permission === 'denied') return;
 
 	const root = document.getElementById('push-banner');
-	const labels = getLabels();
-	if (!root || !labels) return;
+	if (!root) return;
 
 	showBanner(root, labels);
 }

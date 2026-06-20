@@ -237,18 +237,21 @@ export async function registerDevice(
 
 		let endpoint = '';
 		try {
-			endpoint = JSON.parse(data.push_subscription).endpoint ?? '';
+			const parsed = JSON.parse(data.push_subscription) as { endpoint?: string };
+			endpoint = parsed.endpoint ?? '';
 		} catch {
-			return;
+			throw new Error('Invalid push subscription JSON');
 		}
 
-		if (endpoint) {
-			await env.DB.prepare(
-				`DELETE FROM f2w_user_devices WHERE user_id = ? AND platform = 'web' AND sns_endpoint_arn = ?`,
-			)
-				.bind(userId, endpoint)
-				.run();
+		if (!endpoint) {
+			throw new Error('Push subscription missing endpoint');
 		}
+
+		await env.DB.prepare(
+			`DELETE FROM f2w_user_devices WHERE user_id = ? AND platform = 'web' AND sns_endpoint_arn = ?`,
+		)
+			.bind(userId, endpoint)
+			.run();
 
 		const id = generateId();
 		await env.DB.prepare(
@@ -259,7 +262,9 @@ export async function registerDevice(
 		return;
 	}
 
-	if (!data.sns_endpoint_arn) return;
+	if (!data.sns_endpoint_arn) {
+		throw new Error('Missing SNS endpoint ARN');
+	}
 
 	const id = generateId();
 	await env.DB.prepare(
