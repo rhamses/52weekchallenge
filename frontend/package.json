@@ -9,7 +9,9 @@
     "astro": "astro",
     "db:migrate:local": "wrangler d1 migrations apply domain-monitor --local",
     "db:migrate:remote": "wrangler d1 migrations apply domain-monitor --remote",
-    "icons:generate": "python3 scripts/generate-icons.py"
+    "icons:generate": "python3 scripts/generate-icons.py",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.7.0",
@@ -27,6 +29,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250317.0",
     "typescript": "^5.8.2",
+    "vitest": "^3.0.9",
     "wrangler": "^4.0.0"
   }
 }

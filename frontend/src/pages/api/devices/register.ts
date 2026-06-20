@@ -12,32 +12,44 @@ export const POST: APIRoute = async ({ request }) => {
 		return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 	}
 
-	const body = (await request.json()) as {
+	let body: {
 		sns_endpoint_arn?: string;
 		push_subscription?: PushSubscriptionJSON;
 		platform?: 'web' | 'ios' | 'android';
 	};
 
+	try {
+		body = (await request.json()) as typeof body;
+	} catch {
+		return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
+	}
+
 	const platform = body.platform ?? 'web';
 
-	if (platform === 'web') {
-		if (!body.push_subscription || !isValidPushSubscription(body.push_subscription)) {
-			return new Response(JSON.stringify({ error: 'Invalid push subscription' }), { status: 400 });
-		}
+	try {
+		if (platform === 'web') {
+			if (!body.push_subscription || !isValidPushSubscription(body.push_subscription)) {
+				return new Response(JSON.stringify({ error: 'Invalid push subscription' }), { status: 400 });
+			}
 
-		await registerDevice(env, user.id, {
-			platform: 'web',
-			push_subscription: JSON.stringify(body.push_subscription),
-		});
-	} else {
-		if (!body.sns_endpoint_arn) {
-			return new Response(JSON.stringify({ error: 'Missing endpoint ARN' }), { status: 400 });
-		}
+			await registerDevice(env, user.id, {
+				platform: 'web',
+				push_subscription: JSON.stringify(body.push_subscription),
+			});
+		} else {
+			if (!body.sns_endpoint_arn) {
+				return new Response(JSON.stringify({ error: 'Missing endpoint ARN' }), { status: 400 });
+			}
 
-		await registerDevice(env, user.id, {
-			platform,
-			sns_endpoint_arn: body.sns_endpoint_arn,
-		});
+			await registerDevice(env, user.id, {
+				platform,
+				sns_endpoint_arn: body.sns_endpoint_arn,
+			});
+		}
+	} catch (err) {
+		console.error('[devices/register] failed', err);
+		const message = err instanceof Error ? err.message : 'Device registration failed';
+		return new Response(JSON.stringify({ error: message }), { status: 500 });
 	}
 
 	return new Response(JSON.stringify({ ok: true }), {
