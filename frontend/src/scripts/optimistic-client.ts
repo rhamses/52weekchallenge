@@ -33,7 +33,9 @@ export interface OptimisticMutationOptions<T = unknown> {
 	errorMessage?: string;
 }
 
-export async function runOptimisticMutation<T = unknown>(opts: OptimisticMutationOptions<T>): Promise<void> {
+export async function runOptimisticMutation<T = unknown>(
+	opts: OptimisticMutationOptions<T>,
+): Promise<boolean> {
 	const { storageKey, rollback, request, onSuccess, errorMessage } = opts;
 
 	try {
@@ -50,7 +52,7 @@ export async function runOptimisticMutation<T = unknown>(opts: OptimisticMutatio
 				const data = (await res.json().catch(() => null)) as T | null;
 				if (data) onSuccess(data);
 			}
-			return;
+			return true;
 		}
 
 		rollback();
@@ -61,12 +63,14 @@ export async function runOptimisticMutation<T = unknown>(opts: OptimisticMutatio
 			(typeof body === 'object' && body && 'error' in body ? String((body as { error: string }).error) : null) ??
 			'Request failed';
 		showAppError(msg);
+		return false;
 	} catch {
 		queueOperation({
 			url: request.url,
 			method: request.method,
 			body: request.body,
 		});
+		return true;
 	}
 }
 
