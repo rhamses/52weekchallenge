@@ -125,8 +125,30 @@ const isLoggedIn = !!Astro.locals.user;
 			</div>
 		</div>
 
-		<button type="button" class="btn-primary mt-10" @click="submit()">
-			{dict.goal_submit}
+		<button
+			type="button"
+			class="btn-primary mt-10 inline-flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
+			:disabled="submitting"
+			@click="submit()"
+		>
+			<svg
+				x-show="submitting"
+				x-cloak
+				class="h-5 w-5 shrink-0 animate-spin"
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+				aria-hidden="true"
+			>
+				<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+				<path
+					class="opacity-75"
+					fill="currentColor"
+					d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+				></path>
+			</svg>
+			<span x-show="!submitting">{dict.goal_submit}</span>
+			<span x-show="submitting" x-cloak>{dict.goal_submitting}</span>
 		</button>
 	</div>
 
@@ -143,6 +165,7 @@ const isLoggedIn = !!Astro.locals.user;
 				deadlineDate: '',
 				showDateModal: false,
 				showErrors: false,
+				submitting: false,
 				isLoggedIn: config.isLoggedIn,
 				minDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
 
@@ -252,6 +275,8 @@ const isLoggedIn = !!Astro.locals.user;
 				},
 
 				async submit() {
+					if (this.submitting) return;
+
 					if (!this.canSubmit) {
 						this.showErrors = true;
 						if (this.useDeadline && (!this.deadlineDate || this.deadlineDate <= this.minDate)) {
@@ -271,16 +296,19 @@ const isLoggedIn = !!Astro.locals.user;
 					window.f2wSync?.saveDraftGoal(draft);
 
 					if (this.isLoggedIn) {
-						window.f2wGoals?.createGoalOptimistically(
+						this.submitting = true;
+						const ok = await window.f2wGoals?.createGoalOptimistically(
 							draft,
 							config.locale,
 							config.dict.goal_create_error,
 							config.dict.goal_progress,
 							config.dict.goal_created_at,
 						);
-					} else {
-						window.location.href = '/login';
+						if (!ok) this.submitting = false;
+						return;
 					}
+
+					window.location.href = '/login';
 				},
 			}));
 
