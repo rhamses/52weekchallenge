@@ -1,6 +1,7 @@
 import { getCache, setCache, removeCache } from './sync-client';
 import {
 	saveSnapshot,
+	runOptimisticMutation,
 	runOptimisticMutationKeepalive,
 	clearSnapshot,
 } from './optimistic-client';
@@ -296,13 +297,13 @@ export function hydrateGoalsList(): void {
 	bindGoalCardPrefetchAll(list);
 }
 
-export function createGoalOptimistically(
+export async function createGoalOptimistically(
 	draft: DraftPayload,
 	locale: string,
 	errorMessage: string,
 	progressLabel: string,
 	createdAtTemplate: string,
-): void {
+): Promise<boolean> {
 	const tempId = crypto.randomUUID();
 	const pending: PendingGoal = {
 		id: tempId,
@@ -320,7 +321,7 @@ export function createGoalOptimistically(
 	const storageKey = `goals:create:${tempId}`;
 	saveSnapshot(storageKey, pending);
 
-	runOptimisticMutationKeepalive<{ goal: Goal }>({
+	const ok = await runOptimisticMutation<{ goal: Goal }>({
 		storageKey,
 		rollback: () => {
 			removePendingGoal(tempId);
@@ -331,23 +332,20 @@ export function createGoalOptimistically(
 			method: 'POST',
 			body: JSON.stringify(draft),
 		},
-		onSuccess: (data) => {
-			const existing = document.querySelector<HTMLElement>(`[data-goal-card="${tempId}"]`);
+		onSuccess: () => {
 			removePendingGoal(tempId);
 			clearSnapshot(storageKey);
 			invalidateGoalsListCache();
-			if (existing) {
-				existing.replaceWith(
-					renderGoalCard(data.goal, locale, progressLabel, createdAtTemplate),
-				);
-			}
 		},
 		errorMessage,
 	});
 
+	if (!ok) return false;
+
 	window.f2wSync?.clearDraftGoal();
 	document.documentElement.dataset.transition = 'forward';
 	window.location.href = '/goals';
+	return true;
 }
 
 export function deleteGoalOptimistically(goalId: string, deleteUrl: string, errorMessage: string): void {

@@ -15,6 +15,7 @@
   "goal_checkbox_deadline": "Choose a deadline for the goal",
   "goal_change_date": "Change date",
   "goal_submit": "Register goal",
+  "goal_submitting": "Creating goal",
   "login_title": "Now just create an account and start reaching your goal",
   "login_subtitle": "Choose a sign-in method below and access your goal",
   "login_google": "Continue with Google",
