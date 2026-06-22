@@ -2,13 +2,15 @@
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_REGION=us-east-1
-SES_FROM_EMAIL=
-SNS_PLATFORM_ARN=
+SES_FROM_EMAIL=domains@messages.ambiente1.com.br
+
+# Integration tests (npm run test:integration)
+TEST_EMAIL=
 
 # Web Push (same keys as frontend)
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
-VAPID_SUBJECT=
+VAPID_SUBJECT=mailto:domains@messages.ambiente1.com.br
 
 # wrangler secret put VAPID_PRIVATE_KEY
 # wrangler secret put AWS_ACCESS_KEY_ID

@@ -21,7 +21,6 @@ function createEnv(options: {
 	existingDedup?: boolean;
 	devices?: Array<{
 		platform: string;
-		sns_endpoint_arn: string;
 		push_subscription: string | null;
 	}>;
 }): Env {
@@ -54,7 +53,6 @@ function createEnv(options: {
 		AWS_ACCESS_KEY_ID: 'key',
 		AWS_SECRET_ACCESS_KEY: 'secret',
 		SES_FROM_EMAIL: 'noreply@example.com',
-		SNS_PLATFORM_ARN: 'arn:aws:sns:example',
 		VAPID_PUBLIC_KEY: 'public',
 		VAPID_PRIVATE_KEY: 'private',
 		VAPID_SUBJECT: 'mailto:test@example.com',
@@ -84,7 +82,6 @@ describe('processDueToday', () => {
 			devices: [
 				{
 					platform: 'web',
-					sns_endpoint_arn: '',
 					push_subscription: JSON.stringify({ endpoint: 'https://push.test', keys: {} }),
 				},
 			],

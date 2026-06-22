@@ -22,9 +22,10 @@ database_name = "domain-monitor"
 database_id = "8b21eb9b-08fb-47e5-889c-cd2a68181e0b"
 
 [vars]
-AWS_REGION = "us-east-1"
+AWS_REGION = "sa-east-1"
+SES_FROM_EMAIL = "domains@messages.ambiente1.com.br"
 VAPID_PUBLIC_KEY = "BBCZlBnq4VxwJTkCL08C1zrafpvOSBTFMPwHXHlfAm3kTNadoR8WNTRfajZGdR6mrMIDvxRpBMlwJYbygssrMUE"
-VAPID_SUBJECT = "mailto:domains@ambiente1.com.br"
+VAPID_SUBJECT = "mailto:domains@messages.ambiente1.com.br"
 
-# Secrets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, SES_FROM_EMAIL, SNS_PLATFORM_ARN, VAPID_PRIVATE_KEY
+# Secrets: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, SES_FROM_EMAIL, VAPID_PRIVATE_KEY
 
