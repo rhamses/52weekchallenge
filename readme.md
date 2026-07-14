@@ -5,17 +5,19 @@ A PWA for weekly savings goals, built with **Astro 6** on Cloudflare Workers, wi
 ## Repository structure
 
 ```
-├── frontend/     # Astro SSR PWA (Tailwind, Alpine.js, htmx)
-├── monitoring/   # Cron worker (daily UTC midnight reminders)
-└── _docs/        # Design references and original spec
+├── app/            # Astro SSR PWA (Tailwind, Alpine.js, htmx)
+├── landing-page/   # Marketing landing (Astro static → Cloudflare Worker)
+├── monitoring/     # Cron worker (daily UTC midnight reminders)
+└── _docs/          # Design references and original spec
 ```
 
 ## Tech stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Astro 6, Tailwind CSS, Alpine.js, htmx |
-| Hosting | Cloudflare Workers (`@astrojs/cloudflare`) |
+| App | Astro 6, Tailwind CSS, Alpine.js, htmx |
+| Landing | Astro 6 static, Tailwind, DaisyUI → Worker assets |
+| Hosting | Cloudflare Workers (`@astrojs/cloudflare` for app; static assets for landing) |
 | Database | Cloudflare D1 (`domain-monitor`, tables prefixed `f2w_`) |
 | Cache | Cloudflare KV (`f2w:*` keys) |
 | Client cache | localStorage + Service Worker |
@@ -32,13 +34,22 @@ A PWA for weekly savings goals, built with **Astro 6** on Cloudflare Workers, wi
 
 ## Getting started
 
-### Frontend
+### App
 
 ```bash
-cd frontend
+cd app
 cp .dev.vars.example .dev.vars   # fill in Cognito + AWS credentials
 npm install
 npm run db:migrate:local         # apply D1 migrations locally
+npm run dev
+```
+
+### Landing page
+
+```bash
+cd landing-page
+cp .env.example .env             # PUBLIC_APP_URL + PUBLIC_APP_LOGIN_URL
+npm install
 npm run dev
 ```
 
@@ -63,13 +74,14 @@ Edit notification copy in `monitoring/src/templates/` (email, in-app, web push, 
 ### Deploy
 
 ```bash
-cd frontend && npm run build && npx wrangler deploy
+cd app && npm run build && npx wrangler deploy
+cd landing-page && npm run deploy
 cd monitoring && npx wrangler deploy
 ```
 
 ## Environment variables
 
-See `frontend/.dev.vars.example` and `monitoring/.dev.vars.example`.
+See `app/.dev.vars.example`, `landing-page/.env.example`, and `monitoring/.dev.vars.example`.
 
 | Variable | Purpose |
 |----------|---------|
@@ -82,11 +94,13 @@ See `frontend/.dev.vars.example` and `monitoring/.dev.vars.example`.
 | `VAPID_PUBLIC_KEY` | Web Push public key (also in `wrangler.toml` [vars]) |
 | `VAPID_PRIVATE_KEY` | Web Push private key (secret) |
 | `VAPID_SUBJECT` | VAPID contact (`mailto:…`) |
+| `PUBLIC_APP_URL` | Landing → app base URL (`landing-page`) |
+| `PUBLIC_APP_LOGIN_URL` | Landing CTAs → login/create account (`landing-page`) |
 
 ### PWA setup
 
 1. Generate VAPID keys: `npx web-push generate-vapid-keys`
-2. Set `VAPID_PUBLIC_KEY` in `frontend/wrangler.toml` and `monitoring/wrangler.toml` `[vars]`
+2. Set `VAPID_PUBLIC_KEY` in `app/wrangler.toml` and `monitoring/wrangler.toml` `[vars]`
 3. Set `VAPID_PRIVATE_KEY` via `wrangler secret put VAPID_PRIVATE_KEY` on **both** workers
 4. Apply migration `0004_user_devices_web_push.sql`
 5. Verify in Chrome DevTools → Application → Manifest / Service Workers

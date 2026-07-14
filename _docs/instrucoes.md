@@ -5,7 +5,7 @@ Um site PWA que deve se comportar como um app hibrido feito em Astro.JS para rod
 # Requisitos
 
 - Apague todo o conteúdo do repositório e crie pastas separadas para cada assunto: Frontend + Monitoring. 
-- No frontend, toda mudança de página precisa ter transição para simular a experiência de aplicativos, precisa ter suporte a swipe left e right também. Use as APIs Web e pacotes necessários. 
+- No app, toda mudança de página precisa ter transição para simular a experiência de aplicativos, precisa ter suporte a swipe left e right também. Use as APIs Web e pacotes necessários. 
 - Sincronize o site local com o banco D1 do cloudflare, faça cada update estar salvo em um localStorage ao mesmo tempo que salva no D1.
 - Use uma camada de cache KV também. A ideia é: consulta local + consulta KV + consulta D1.
 - Crie uma com todas as moedas do mundo para criar o dropdown de selecao de moedas no onboarding.

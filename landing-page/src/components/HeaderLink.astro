@@ -1,0 +1,25 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+type NavItem = {
+  name: string;
+  href: string;
+};
+
+type Props = HTMLAttributes<"a"> & {
+  item: NavItem;
+};
+
+const { item, class: className } = Astro.props;
+---
+
+<a href={item.href} class={className}>
+  {item.name}
+</a>
+
+<style>
+  a {
+    display: inline-block;
+    text-decoration: none;
+  }
+</style>

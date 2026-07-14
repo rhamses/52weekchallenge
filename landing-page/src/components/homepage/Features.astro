@@ -1,0 +1,109 @@
+---
+import { Image } from "astro:assets";
+import type { Locale } from "../../i18n";
+import { getDictionary } from "../../i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+---
+
+<section id="features" class="section section-features bg-white text-black my-0! py-20">
+  <div class="container">
+    <div class="grid grid-cols-1 md:grid-cols-2">
+      <h2 class="h3">{dict.features_title}</h2>
+    </div>
+
+    <div
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[3fr_2fr] gap-10 mt-8"
+    >
+      <div>
+        <article class="bg-custom-light-100 rounded-2xl p-10 text-center">
+          <div>
+            <Image
+              width={578}
+              height={343}
+              src="/img/home/img2.webp"
+              alt=""
+              class="w-auto h-auto mx-auto"
+              format="webp"
+              quality={80}
+            />
+          </div>
+          <div>
+            <h3 class="h4 dark:text-black">{dict.feature_goals_title}</h3>
+            <p class="text-base text-custom-grey-100">{dict.feature_goals_body}</p>
+          </div>
+        </article>
+      </div>
+      <div class="grid gap-10">
+        <article class="bg-custom-light-100 border border-custom-light-border p-10 rounded-xl">
+          <svg class="icon" width="28" height="28">
+            <use xlink:href="#i3"></use>
+          </svg>
+          <div class="mt-4">
+            <h4 class="h5 dark:text-black">{dict.feature_safe_title}</h4>
+            <p class="text-sm text-custom-grey-100">{dict.feature_safe_body}</p>
+          </div>
+        </article>
+        <article class="bg-custom-light-100 border border-custom-light-border p-10 rounded-xl">
+          <svg class="icon" width="28" height="28">
+            <use xlink:href="#i4"></use>
+          </svg>
+          <div class="mt-4">
+            <h4 class="h5 dark:text-black">{dict.feature_progress_title}</h4>
+            <p class="text-sm text-custom-grey-100">{dict.feature_progress_body}</p>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_3fr] gap-10 mt-8"
+    >
+      <div class="grid gap-10 order-2 md:order-1">
+        <article class="bg-custom-light-100 border border-custom-light-border p-10 rounded-xl">
+          <svg class="icon" width="28" height="28">
+            <use xlink:href="#i1"></use>
+          </svg>
+          <div class="mt-4">
+            <h4 class="h5 dark:text-black">{dict.feature_reminders_title}</h4>
+            <p class="text-sm text-custom-grey-100">{dict.feature_reminders_body}</p>
+          </div>
+        </article>
+        <article class="bg-custom-light-100 border border-custom-light-border p-10 rounded-xl">
+          <svg class="icon" width="28" height="28">
+            <use xlink:href="#i2"></use>
+          </svg>
+          <div class="mt-4">
+            <h4 class="h5 dark:text-black">{dict.feature_multi_title}</h4>
+            <p class="text-sm text-custom-grey-100">{dict.feature_multi_body}</p>
+          </div>
+        </article>
+      </div>
+
+      <div class="order-1">
+        <article class="bg-custom-light-100 rounded-2xl p-10 text-center">
+          <div>
+            <Image
+              width={422}
+              height={242}
+              src="/img/home/img3.webp"
+              alt=""
+              class="w-auto h-auto mx-auto"
+              format="webp"
+              quality={100}
+            />
+          </div>
+          <div>
+            <h3 class="h4 dark:text-black">{dict.feature_control_title}</h3>
+            <p class="text-base text-custom-grey-100">{dict.feature_control_body}</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,51 @@
+---
+import type { Locale } from "../i18n";
+import { getDictionary, getAppLoginUrl } from "../i18n";
+import { getNavMenu } from "../consts";
+import HeaderLink from "./HeaderLink.astro";
+import { ChevronRight } from "@lucide/astro";
+import Logo from "./Logo.astro";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+const menu = getNavMenu(locale);
+const loginUrl = getAppLoginUrl();
+---
+
+<div class="drawer-side">
+  <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay">
+    <span class="sr-only">Open menu</span>
+  </label>
+  <div class="menu bg-base-200 min-h-full w-80 p-4">
+    <Logo locale={locale} />
+    <ul class="mt-4">
+      {
+        menu.map((item) => (
+          <li>
+            <HeaderLink item={item} />
+          </li>
+        ))
+      }
+    </ul>
+    <div class="flex flex-col gap-2 items-center w-full mt-auto">
+      <a
+        href={loginUrl}
+        class="btn btn-sm w-full rounded-md bg-white text-main font-light"
+      >
+        {dict.login}
+        <ChevronRight size="14" />
+      </a>
+      <a
+        href={loginUrl}
+        class="btn btn-sm w-full rounded-md bg-main border-main text-white font-light"
+      >
+        {dict.sign_up}
+        <ChevronRight size="14" />
+      </a>
+    </div>
+  </div>
+</div>

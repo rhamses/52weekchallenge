@@ -1,0 +1,24 @@
+---
+import type { Locale } from "../i18n";
+import { getDictionary, localeHomePath } from "../i18n";
+import { LOGO_ICON } from "../consts";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+---
+
+<a href={localeHomePath(locale)} class="logo">
+  <img
+    src={LOGO_ICON}
+    alt={dict.app_name}
+    class="h-9 w-9 object-contain"
+    fetchpriority="high"
+    width="36"
+    height="36"
+  />
+  <span>{dict.app_name}</span>
+</a>

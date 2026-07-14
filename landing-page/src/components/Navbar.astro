@@ -1,0 +1,24 @@
+---
+import type { Locale } from "../i18n";
+import { getNavMenu } from "../consts";
+import HeaderLink from "./HeaderLink.astro";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const menu = getNavMenu(locale);
+---
+
+<div class="hidden flex-none lg:block mx-auto">
+  <ul class="menu menu-horizontal gap-x-4">
+    {
+      menu.map((item) => (
+        <li>
+          <HeaderLink item={item} class="hover:bg-white dark:text-black" />
+        </li>
+      ))
+    }
+  </ul>
+</div>
