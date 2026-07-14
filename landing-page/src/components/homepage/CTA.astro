@@ -1,0 +1,38 @@
+---
+import { ChevronRight } from "@lucide/astro";
+import type { Locale } from "../../i18n";
+import { getDictionary, getAppLoginUrl } from "../../i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+const loginUrl = getAppLoginUrl();
+---
+
+<section class="section section-cta overflow-hidden">
+  <div class="container">
+    <div class="max-w-lg mx-auto">
+      <img
+        src="/img/logo-icon.png"
+        alt=""
+        class="block text-center mb-6 mx-auto shadow-xl shadow-custom-blue-200/40 rounded-xl"
+        width="64"
+        height="64"
+      />
+      <h2 class="max-w-sm mx-auto text-center text-white">{dict.cta_title}</h2>
+      <p class="text-center mb-6 text-white">{dict.cta_body}</p>
+      <div class="flex justify-center">
+        <a
+          href={loginUrl}
+          class="btn btn-lg w-full sm:w-auto rounded-md bg-main text-white hover:bg-custom-blue-400 border-main font-light shadow-none"
+        >
+          {dict.cta_button}
+          <ChevronRight size="14" />
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

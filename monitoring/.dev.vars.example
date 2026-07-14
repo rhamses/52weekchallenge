@@ -7,7 +7,7 @@ SES_FROM_EMAIL=domains@messages.ambiente1.com.br
 # Integration tests (npm run test:integration)
 TEST_EMAIL=
 
-# Web Push (same keys as frontend)
+# Web Push (same keys as app)
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:domains@messages.ambiente1.com.br

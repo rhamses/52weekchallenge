@@ -1,0 +1,107 @@
+---
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import { Image } from "astro:assets";
+import type { Locale } from "../../i18n";
+import { getDictionary } from "../../i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+
+const reviews = [
+  {
+    body: dict.review_1_body,
+    name: dict.review_1_name,
+    role: dict.review_1_role,
+  },
+  {
+    body: dict.review_2_body,
+    name: dict.review_2_name,
+    role: dict.review_2_role,
+  },
+  {
+    body: dict.review_3_body,
+    name: dict.review_3_name,
+    role: dict.review_3_role,
+  },
+];
+---
+
+<section id="reviews" class="section section-review my-0! py-20! bg-white text-black">
+  <div class="container">
+    <h2 class="h3 text-center">{dict.reviews_title}</h2>
+
+    <div class="relative">
+      <div
+        class="hidden md:block pointer-events-none absolute left-0 top-0 h-full w-24 z-10 bg-gradient-to-r from-white to-transparent"
+      >
+      </div>
+
+      <div
+        class="hidden md:block pointer-events-none absolute right-0 top-0 h-full w-24 z-10 bg-gradient-to-l from-white to-transparent"
+      >
+      </div>
+
+      <div class="swiper mt-10" id="reviewSwiper">
+        <div class="swiper-wrapper">
+          {
+            reviews.map((review) => (
+              <article class="swiper-slide text-center p-10 rounded-xl">
+                <p class="text-sm">"{review.body}"</p>
+                <div class="flex flex-wrap gap-2 items-center justify-center mt-4">
+                  <Image
+                    width={50}
+                    height={50}
+                    src="/img/comments/ava1.png"
+                    alt=""
+                    class="rounded-full w-10 h-10 object-cover"
+                    format="webp"
+                    quality={80}
+                  />
+                  <div class="flex flex-wrap gap-1">
+                    <b>{review.name}</b>
+                    <span class="text-custom-grey-100">{review.role}</span>
+                  </div>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="swiper-pagination"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import Swiper from "swiper";
+  import { Pagination } from "swiper/modules";
+
+  new Swiper(".swiper", {
+    modules: [Pagination],
+    loop: true,
+    spaceBetween: 24,
+    pagination: {
+      el: ".swiper-pagination",
+      clickable: true,
+    },
+    breakpoints: {
+      0: {
+        slidesPerView: 1,
+        spaceBetween: 0,
+      },
+      768: {
+        slidesPerView: 1,
+      },
+      1024: {
+        slidesPerView: 3,
+      },
+    },
+  });
+</script>
