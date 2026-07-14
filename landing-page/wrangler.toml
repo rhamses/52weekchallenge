@@ -1,0 +1,15 @@
+name = "52week-landing-page"
+compatibility_date = "2026-07-14"
+
+[assets]
+directory = "./dist"
+not_found_handling = "404-page"
+
+[observability]
+enabled = true
+
+[vars]
+# PUBLIC_* are inlined at `astro build` time via .env / CI env.
+# Keep these documented for operators; rebuild after changing them.
+PUBLIC_APP_URL = "https://52weekchallenge.app"
+PUBLIC_APP_LOGIN_URL = "https://52weekchallenge.app/login"

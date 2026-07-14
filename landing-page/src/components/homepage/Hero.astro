@@ -1,0 +1,57 @@
+---
+import { ChevronRight } from "@lucide/astro";
+import type { Locale } from "../../i18n";
+import { getDictionary, getAppLoginUrl, localeHomePath } from "../../i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+const loginUrl = getAppLoginUrl();
+const howHref = `${localeHomePath(locale)}#how-it-works`;
+---
+
+<section class="section section-hero">
+  <div class="container">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+      <div class="text-center md:text-left">
+        <h1 class="dark:text-black">{dict.hero_title}</h1>
+        <p class="subtitle">{dict.hero_subtitle}</p>
+        <div
+          class="flex gap-3 item-center justify-center flex-wrap mt-8 mx-auto md:justify-start"
+        >
+          <a
+            href={loginUrl}
+            class="btn btn-lg w-full sm:w-auto rounded-md bg-main hover:bg-custom-blue-400 border-main text-white font-light"
+          >
+            {dict.hero_cta}
+            <ChevronRight size="14" />
+          </a>
+          <a
+            href={howHref}
+            class="btn btn-lg w-full sm:w-auto rounded-md bg-white text-main font-light"
+          >
+            {dict.hero_secondary}
+            <ChevronRight size="14" />
+          </a>
+        </div>
+
+        <div class="mt-8 sm:mt-20">
+          <p class="dark:text-black">{dict.hero_trusted}</p>
+        </div>
+      </div>
+      <figure class="-mb-20 mt-auto max-h-[600px] overflow-hidden">
+        <img
+          src="/img/home/img1.webp"
+          width="560"
+          height="646"
+          alt=""
+          class="mx-auto mt-[35px] h-auto max-w-[70%] w-full rounded-[35px] shadow-[0px_-3px_51px_rgba(0,0,0,0.2)]"
+          fetchpriority="high"
+        />
+      </figure>
+    </div>
+  </div>
+</section>

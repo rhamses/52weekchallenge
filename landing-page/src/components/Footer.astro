@@ -1,0 +1,61 @@
+---
+import type { Locale } from "../i18n";
+import { getDictionary, getAppLoginUrl, getAppTermsUrl, localeHomePath } from "../i18n";
+import Logo from "./Logo.astro";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+const today = new Date();
+const home = localeHomePath(locale);
+const loginUrl = getAppLoginUrl();
+const termsUrl = getAppTermsUrl();
+---
+
+<footer
+  class="footer flex-col w-full text-custom-grey-100 gap-y-0 gap-x-10 bg-white text-black"
+>
+  <div class="footer-top w-full pt-15 pb-10">
+    <div class="container">
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10">
+        <div>
+          <Logo locale={locale} />
+          <p class="mt-4">{dict.footer_blurb}</p>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div>
+            <h3 class="text-lg font-semibold text-black mb-3">{dict.footer_product}</h3>
+            <nav class="grid gap-2">
+              <a href={`${home}#features`} class="hover:underline">{dict.footer_features}</a>
+              <a href={`${home}#how-it-works`} class="hover:underline">{dict.footer_how}</a>
+              <a href={`${home}#faq`} class="hover:underline">{dict.footer_faq}</a>
+            </nav>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-black mb-3">{dict.footer_account}</h3>
+            <nav class="grid gap-2">
+              <a href={loginUrl} class="hover:underline">{dict.footer_login}</a>
+              <a href={loginUrl} class="hover:underline">{dict.footer_signup}</a>
+            </nav>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-black mb-3">{dict.footer_legal}</h3>
+            <nav class="grid gap-2">
+              <a href={termsUrl} class="hover:underline">{dict.footer_terms}</a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-btm py-8 w-full">
+    <div class="container border-t border-base-300 dark:border-black/10 pt-8">
+      <p class="text-center">
+        &copy; {today.getFullYear()} {dict.footer_copyright}
+      </p>
+    </div>
+  </div>
+</footer>

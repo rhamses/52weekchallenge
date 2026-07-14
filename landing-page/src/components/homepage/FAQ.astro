@@ -1,0 +1,76 @@
+---
+import { ChevronRight } from "@lucide/astro";
+import type { Locale } from "../../i18n";
+import { getDictionary, getAppLoginUrl } from "../../i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+const loginUrl = getAppLoginUrl();
+
+const faqs = [
+  { question: dict.faq_1_q, answer: dict.faq_1_a },
+  { question: dict.faq_2_q, answer: dict.faq_2_a },
+  { question: dict.faq_3_q, answer: dict.faq_3_a },
+  { question: dict.faq_4_q, answer: dict.faq_4_a },
+  { question: dict.faq_5_q, answer: dict.faq_5_a },
+];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+
+<section id="faq" class="section section-faq">
+  <div class="container">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+      <div>
+        <h2 class="h3 dark:text-black">{dict.faq_title}</h2>
+
+        <p class="text-base text-custom-grey-100 mb-8">{dict.faq_subtitle}</p>
+
+        <a
+          href={loginUrl}
+          class="btn btn-lg w-full sm:w-auto rounded-md bg-main hover:bg-custom-blue-400 border-main text-white font-light"
+        >
+          {dict.faq_cta}
+          <ChevronRight size="14" />
+        </a>
+      </div>
+
+      <div class="grid gap-3">
+        {
+          faqs.map((faq, index) => (
+            <div class="collapse collapse-arrow bg-base-100 border border-base-300 dark:bg-white dark:text-black dark:border-white">
+              <input
+                type="radio"
+                name="faq-accordion"
+                checked={index === 0}
+                aria-hidden="true"
+                tabindex="-1"
+              />
+
+              <div class="collapse-title font-semibold">{faq.question}</div>
+
+              <div class="collapse-content text-sm">{faq.answer}</div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>

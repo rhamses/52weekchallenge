@@ -1,0 +1,54 @@
+---
+import Navbar from "./Navbar.astro";
+import Logo from "./Logo.astro";
+import LangSwitcher from "./LangSwitcher.astro";
+import { ChevronRight } from "@lucide/astro";
+import type { Locale } from "../i18n";
+import { getDictionary, getAppLoginUrl } from "../i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+const loginUrl = getAppLoginUrl();
+---
+
+<header class="bg-custom-blue-100">
+  <div class="navbar w-full">
+    <div class="container flex items-center justify-between">
+      <div class="mr-auto">
+        <Logo locale={locale} />
+      </div>
+      <Navbar locale={locale} />
+      <div class="hidden sm:flex gap-2 items-center ml-auto">
+        <LangSwitcher locale={locale} />
+        <a
+          href={loginUrl}
+          class="btn btn-sm rounded-md bg-white text-main font-light"
+        >
+          {dict.login}
+          <ChevronRight size="14" />
+        </a>
+        <a
+          href={loginUrl}
+          class="btn btn-sm rounded-md bg-main hover:bg-custom-blue-400 border-main text-white font-light"
+        >
+          {dict.sign_up}
+          <ChevronRight size="14" />
+        </a>
+      </div>
+      <div class="flex items-center gap-1 sm:hidden ml-auto">
+        <LangSwitcher locale={locale} />
+        <label
+          for="my-drawer-2"
+          aria-label="open sidebar"
+          class="btn btn-square btn-ghost"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg>
+        </label>
+      </div>
+    </div>
+  </div>
+</header>
