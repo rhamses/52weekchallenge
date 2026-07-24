@@ -49,6 +49,7 @@
 html,
 body {
   @apply flex flex-col min-h-screen;
+  scroll-behavior: smooth;
 }
 
 .logo {

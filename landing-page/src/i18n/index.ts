@@ -43,6 +43,11 @@ export function localeHomePath(locale: Locale): string {
 	return LOCALES.find((l) => l.code === locale)?.path ?? '/';
 }
 
+export function localeTermsPath(locale: Locale): string {
+	const home = localeHomePath(locale);
+	return home === '/' ? '/terms' : `${home.replace(/\/$/, '')}/terms`;
+}
+
 export function getAppLoginUrl(): string {
 	return (
 		import.meta.env.PUBLIC_APP_LOGIN_URL ||
@@ -52,8 +57,4 @@ export function getAppLoginUrl(): string {
 
 export function getAppUrl(): string {
 	return import.meta.env.PUBLIC_APP_URL || 'https://52weekchallenge.app';
-}
-
-export function getAppTermsUrl(): string {
-	return `${getAppUrl().replace(/\/$/, '')}/terms`;
 }

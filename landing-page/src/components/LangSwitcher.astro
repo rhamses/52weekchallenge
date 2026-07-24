@@ -1,6 +1,6 @@
 ---
 import type { Locale } from '../i18n';
-import { LOCALES } from '../i18n';
+import { LOCALES, localeHomePath, localeTermsPath } from '../i18n';
 
 interface Props {
 	locale: Locale;
@@ -8,6 +8,12 @@ interface Props {
 
 const { locale } = Astro.props;
 const current = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
+const pathname = Astro.url.pathname;
+const onTerms = /\/terms\/?$/.test(pathname);
+
+function localeHref(code: Locale): string {
+	return onTerms ? localeTermsPath(code) : localeHomePath(code);
+}
 ---
 
 <div class="relative" data-lang-switcher>
@@ -30,7 +36,7 @@ const current = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
 			LOCALES.map((l) => (
 				<li>
 					<a
-						href={l.path}
+						href={localeHref(l.code)}
 						class:list={[
 							'flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-custom-blue-100',
 							l.code === locale && 'bg-custom-blue-100 font-semibold text-main',
