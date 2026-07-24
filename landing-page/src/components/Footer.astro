@@ -1,6 +1,6 @@
 ---
 import type { Locale } from "../i18n";
-import { getDictionary, getAppLoginUrl, getAppTermsUrl, localeHomePath } from "../i18n";
+import { getDictionary, getAppLoginUrl, localeHomePath, localeTermsPath } from "../i18n";
 import Logo from "./Logo.astro";
 
 interface Props {
@@ -12,7 +12,7 @@ const dict = getDictionary(locale);
 const today = new Date();
 const home = localeHomePath(locale);
 const loginUrl = getAppLoginUrl();
-const termsUrl = getAppTermsUrl();
+const termsUrl = localeTermsPath(locale);
 ---
 
 <footer
@@ -30,7 +30,7 @@ const termsUrl = getAppTermsUrl();
             <h3 class="text-lg font-semibold text-black mb-3">{dict.footer_product}</h3>
             <nav class="grid gap-2">
               <a href={`${home}#features`} class="hover:underline">{dict.footer_features}</a>
-              <a href={`${home}#how-it-works`} class="hover:underline">{dict.footer_how}</a>
+              <!-- <a href={`${home}#how-it-works`} class="hover:underline">{dict.footer_how}</a> -->
               <a href={`${home}#faq`} class="hover:underline">{dict.footer_faq}</a>
             </nav>
           </div>

@@ -9,16 +9,20 @@ import { getDictionary } from "../i18n";
 
 interface Props {
   locale: Locale;
+  title?: string;
+  description?: string;
 }
 
-const { locale } = Astro.props;
+const { locale, title, description } = Astro.props;
 const dict = getDictionary(locale);
+const pageTitle = title ?? dict.app_name;
+const pageDescription = description ?? dict.site_description;
 ---
 
 <!doctype html>
 <html lang={locale}>
   <head>
-    <SEO title={dict.app_name} description={dict.site_description} locale={locale} />
+    <SEO title={pageTitle} description={pageDescription} locale={locale} />
   </head>
   <body class="bg-white text-black">
     <div class="drawer min-h-screen">

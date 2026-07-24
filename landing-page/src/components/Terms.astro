@@ -1,0 +1,49 @@
+---
+import type { Locale } from "../i18n";
+import { getDictionary, localeHomePath } from "../i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const dict = getDictionary(locale);
+const home = localeHomePath(locale);
+
+const sections = [
+  { title: dict.terms_1_title, body: dict.terms_1_body },
+  { title: dict.terms_2_title, body: dict.terms_2_body },
+  { title: dict.terms_3_title, body: dict.terms_3_body },
+  { title: dict.terms_4_title, body: dict.terms_4_body },
+  { title: dict.terms_5_title, body: dict.terms_5_body },
+  { title: dict.terms_6_title, body: dict.terms_6_body },
+  { title: dict.terms_7_title, body: dict.terms_7_body },
+  { title: dict.terms_8_title, body: dict.terms_8_body },
+  { title: dict.terms_9_title, body: dict.terms_9_body },
+] as const;
+---
+
+<article class="section py-16 md:py-20">
+  <div class="container max-w-3xl">
+    <h1 class="h1 mb-3">{dict.terms_title}</h1>
+    <p class="text-custom-grey-100 mb-10">{dict.terms_updated}</p>
+
+    <div class="space-y-8 text-custom-grey-100">
+      {
+        sections.map((section) => (
+          <section>
+            <h2 class="text-xl md:text-2xl font-bold text-black mb-3">{section.title}</h2>
+            <p class="leading-relaxed">{section.body}</p>
+          </section>
+        ))
+      }
+    </div>
+
+    <a
+      href={home}
+      class="inline-flex mt-12 btn bg-main text-white border-none hover:bg-custom-blue-400"
+    >
+      {dict.terms_back}
+    </a>
+  </div>
+</article>

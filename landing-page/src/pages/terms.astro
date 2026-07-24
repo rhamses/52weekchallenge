@@ -1,0 +1,16 @@
+---
+import Layout from '../layouts/Main.astro';
+import Terms from '../components/Terms.astro';
+import { getDictionary } from '../i18n';
+
+const locale = 'pt-BR' as const;
+const dict = getDictionary(locale);
+---
+
+<Layout
+	locale={locale}
+	title={`${dict.terms_title} | ${dict.app_name}`}
+	description={dict.terms_description}
+>
+	<Terms locale={locale} />
+</Layout>
