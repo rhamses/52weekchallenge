@@ -8,8 +8,8 @@ export function getNavMenu(locale: Locale) {
 	const home = localeHomePath(locale);
 	return [
 		{ name: dict.nav_features, href: `${home}#features` },
-		{ name: dict.nav_how, href: `${home}#how-it-works` },
-		{ name: dict.nav_reviews, href: `${home}#reviews` },
+		// { name: dict.nav_how, href: `${home}#how-it-works` },
+		// { name: dict.nav_reviews, href: `${home}#reviews` },
 		{ name: dict.nav_faq, href: `${home}#faq` },
 	];
 }
